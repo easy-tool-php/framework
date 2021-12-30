@@ -16,9 +16,9 @@ class DataObject
      *
      * @return mixed
      */
-    public function get(string $key)
+    public function get(?string $key = null)
     {
-        return $this->data[$key] ?? null;
+        return $key ? ($this->data[$key] ?? null) : $this->data;
     }
 
     /**
@@ -52,5 +52,34 @@ class DataObject
     {
         $this->data = array_merge($this->data, $data);
         return $this;
+    }
+
+    /**
+     * Return an array with pure data, no objects
+     */
+    public function toArray($data = null): array
+    {
+        if ($data === null) {
+            $data = $this->data;
+        }
+
+        $array = [];
+        foreach ($data as $key => $value) {
+            switch (strtolower(gettype($value))) {
+                case 'integer':
+                case 'double':
+                case 'string':
+                case 'null':
+                case 'boolean':
+                    $array[$key] = $value;
+                    break;
+
+                case 'array':
+                    $array[$key] = $this->toArray($value);
+                    break;
+            }
+        }
+
+        return $array;
     }
 }

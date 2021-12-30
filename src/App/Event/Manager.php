@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App\Event;
 
+use EasyTool\Framework\App\Config\Configurable;
 use EasyTool\Framework\App\Data\DataObject;
 use EasyTool\Framework\App\ObjectManager;
 use Exception;
@@ -9,6 +10,10 @@ use ReflectionException;
 
 class Manager
 {
+    use Configurable;
+
+    public const CONFIG_NAME = 'events';
+
     private ObjectManager $objectManager;
 
     /**
@@ -21,10 +26,19 @@ class Manager
         $this->objectManager = $objectManager;
     }
 
+    public function initialize()
+    {
+        foreach ($this->initConfig() as $name => $observer) {
+            $this->addEvent($name, $observer);
+        }
+    }
+
     /**
      * Add event observer
+     *
+     * @param array|string $observer  Observer name
      */
-    public function addEvent(string $name, AbstractObserver $observer): void
+    public function addEvent(string $name, $observer): void
     {
         if (!isset($this->events[$name])) {
             $this->events[$name] = [];

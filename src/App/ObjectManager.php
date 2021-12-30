@@ -73,7 +73,7 @@ class ObjectManager
                 $arguments[] = $argumentArr[$parameter->getName()];
             } elseif ($parameter->isOptional()) {
                 $arguments[] = $parameter->getDefaultValue();
-            } elseif (($injectedClass = $parameter->getClass())) {
+            } elseif (($injectedClass = $parameter->getType())) {
                 $arguments[] = $this->get($injectedClass->getName());
             } else {
                 throw new Exception(

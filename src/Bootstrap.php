@@ -16,9 +16,12 @@ class Bootstrap
         return self::$instance;
     }
 
-    public function createApplication(ClassLoader $composerLoader): App
+    public function createApplication(ClassLoader $composerLoader, string $directoryRoot): App
     {
         return App\ObjectManager::getInstance()
-            ->create(App::class, ['composerLoader' => $composerLoader]);
+            ->create(App::class, [
+                'composerLoader' => $composerLoader,
+                'directoryRoot'  => $directoryRoot
+            ]);
     }
 }
