@@ -3,6 +3,8 @@
 namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
+use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\Console\Command\Command;
 
 class App
 {
@@ -40,8 +42,21 @@ class App
         $this->eventManager->initialize();
     }
 
+    public function getVersion()
+    {
+    }
+
     public function handleCommand()
     {
+        /* @var $consoleApplication ConsoleApplication */
+        $consoleApplication = $this->objectManager->create(
+            ConsoleApplication::class,
+            [
+                'name' => 'EasyTool',
+                'version' => $this->getVersion()
+            ]
+        );
+        $consoleApplication->run();
     }
 
     public function handleHttp()

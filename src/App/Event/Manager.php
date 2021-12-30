@@ -26,7 +26,10 @@ class Manager
         $this->objectManager = $objectManager;
     }
 
-    public function initialize()
+    /**
+     * Collect config data from `app/config/events.php` and add events
+     */
+    public function initialize(): void
     {
         foreach ($this->initConfig() as $name => $observer) {
             $this->addEvent($name, $observer);
