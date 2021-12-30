@@ -18,10 +18,7 @@
         }
     },
     "require": {
-        "php": ">=7.3"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "*"
+        "php": ">=7.4"
     },
     "autoload": {
         "psr-4": {
