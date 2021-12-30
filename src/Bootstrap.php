@@ -2,11 +2,11 @@
 
 namespace EasyTool\Framework;
 
+use Composer\Autoload\ClassLoader;
+
 class Bootstrap
 {
     private static ?Bootstrap $instance = null;
-
-    private App\ObjectManager $objectManager;
 
     public static function getInstance(): Bootstrap
     {
@@ -16,13 +16,9 @@ class Bootstrap
         return self::$instance;
     }
 
-    public function __construct()
+    public function createApplication(ClassLoader $composerLoader): App
     {
-        $this->objectManager = App\ObjectManager::getInstance();
-    }
-
-    public function createApplication(): App
-    {
-        return $this->objectManager->get(App::class);
+        return App\ObjectManager::getInstance()
+            ->create(App::class, ['composerLoader' => $composerLoader]);
     }
 }
