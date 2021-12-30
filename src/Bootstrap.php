@@ -4,7 +4,7 @@ namespace EasyTool\Framework;
 
 class Bootstrap
 {
-    private static Bootstrap $instance;
+    private static ?Bootstrap $instance = null;
 
     private App\ObjectManager $objectManager;
 

@@ -8,7 +8,7 @@ use ReflectionParameter;
 
 class ObjectManager
 {
-    private static ObjectManager $instance;
+    private static ?ObjectManager $instance = null;
 
     /**
      * Class aliases mapping, format is like ['alias' => 'class_name']

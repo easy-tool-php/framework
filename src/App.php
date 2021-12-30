@@ -8,7 +8,7 @@ class App
     {
     }
 
-    public function handleCommon()
+    public function handleCommand()
     {
     }
 }
