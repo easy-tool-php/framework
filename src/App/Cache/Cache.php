@@ -2,45 +2,95 @@
 
 namespace EasyTool\Framework\App\Cache;
 
-class Cache implements \Psr\SimpleCache\CacheInterface
+use Psr\SimpleCache\CacheInterface;
+
+abstract class AbstractCache implements CacheInterface
 {
+    protected array $data = [];
+
+    /**
+     * @inheritDoc
+     */
+    public function has($key): bool
+    {
+        return isset($this->data[$key]);
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function get($key, $default = null)
     {
-        // TODO: Implement get() method.
+        return isset($this->data[$key])
+            ? ($this->data[$key]['ttl'] !== null
+                ? (time() - $this->data[$key]['time'] <= $this->data[$key]['ttl']
+                    ? $this->data[$key]['value']
+                    : $default
+                )
+                : $this->data[$key]['value']
+            )
+            : $default;
     }
 
-    public function set($key, $value, $ttl = null)
+    /**
+     * @inheritDoc
+     */
+    public function set($key, $value, $ttl = null): bool
     {
-        // TODO: Implement set() method.
+        $this->data[$key] = ['ttl' => $ttl, 'time' => time(), 'value' => $value];
+        return true;
     }
 
-    public function delete($key)
+    /**
+     * @inheritDoc
+     */
+    public function delete($key): bool
     {
-        // TODO: Implement delete() method.
+        unset($this->data[$key]);
+        return true;
     }
 
-    public function clear()
+    /**
+     * @inheritDoc
+     */
+    public function clear(): bool
     {
-        // TODO: Implement clear() method.
+        $this->data = [];
+        return true;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function getMultiple($keys, $default = null)
     {
-        // TODO: Implement getMultiple() method.
+        $values = [];
+        foreach ($keys as $key) {
+            $values[$key] = $this->get($key, $default);
+        }
+        return $values;
     }
 
-    public function setMultiple($values, $ttl = null)
+    /**
+     * @inheritDoc
+     */
+    public function setMultiple($values, $ttl = null): bool
     {
-        // TODO: Implement setMultiple() method.
+        $time = time();
+        foreach ($values as $key => $value) {
+            $this->data[$key] = ['ttl' => $ttl, 'time' => $time, 'value' => $value];
+        }
+        return true;
     }
 
-    public function deleteMultiple($keys)
+    /**
+     * @inheritDoc
+     */
+    public function deleteMultiple($keys): bool
     {
-        // TODO: Implement deleteMultiple() method.
-    }
-
-    public function has($key)
-    {
-        // TODO: Implement has() method.
+        foreach ($keys as $key) {
+            unset($this->data[$key]);
+        }
+        return true;
     }
 }
