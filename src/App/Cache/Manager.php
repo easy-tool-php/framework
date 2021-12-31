@@ -10,10 +10,10 @@ class Manager
 {
     public const CONFIG_NAME = 'cache';
 
+    private Config $config;
     private ConfigManager $configManager;
     private ObjectManager $objectManager;
     private array $caches = [];
-    private string $adapter;
 
     public function __construct(
         ConfigManager $configManager,
@@ -24,12 +24,11 @@ class Manager
     }
 
     /**
-     * Collect config data from `app/config/cache.php` and add initialize caches
+     * Get adapter info from config file
      */
     public function initialize(): void
     {
-        $config = $this->configManager->getConfig(self::CONFIG_NAME);
-        $this->adapter = $config->get('adapter');
+        $this->config = $this->configManager->getConfig(self::CONFIG_NAME);
     }
 
     /**
@@ -40,7 +39,7 @@ class Manager
         if (!isset($this->caches[$name])) {
             $this->caches[$name] = $this->objectManager->create(
                 Cache::class,
-                ['adapter' => $this->objectManager->create($this->adapter)]
+                ['adapter' => $this->objectManager->create($this->config->get('adapter'))]
             );
         }
         return $this->caches[$name];
