@@ -35,7 +35,7 @@ class ObjectManager
      * Collect class aliases to build a mapping,
      *     system follows the mapping to get singletons or create instances
      *
-     * @param array $classAliases  Class aliases mapping, format is like ['alias' => 'class_name']
+     * @param array $classAliases Class aliases mapping, format is like ['alias' => 'class_name']
      */
     public function collectClassAliases(array $classAliases): void
     {
@@ -53,7 +53,7 @@ class ObjectManager
     /**
      * Create an instance with specified alias
      *
-     * @param array $argumentArr  Argument array, format is like ['argument_name' => $value]
+     * @param array $argumentArr Argument array, format is like ['argument_name' => $value]
      * @throws ReflectionException
      * @throws Exception
      */
