@@ -2,22 +2,24 @@
 
 namespace EasyTool\Framework\App;
 
-use EasyTool\Framework\App\Filesystem\DirectoryManager;
-
 class Config extends Data\DataObject
 {
-    private DirectoryManager $directoryManager;
+    private FileManager $fileManager;
 
     public function __construct(
-        DirectoryManager $directoryManager
+        FileManager $fileManager
     ) {
-        $this->directoryManager = $directoryManager;
+        $this->fileManager = $fileManager;
     }
 
     public function collectConfigByName($name): array
     {
-        $configFile = $this->directoryManager->getAbsolutePath(DirectoryManager::CONFIG) . '/' . $name . '.php';
+        $configFile = $this->fileManager->getDirectoryPath(FileManager::DIR_CONFIG) . '/' . $name . '.php';
         $this->set($name, (is_file($configFile) && is_array(($config = require $configFile))) ? $config : []);
         return $this->get($name);
+    }
+
+    public function updateConfigByName($name, $config): void
+    {
     }
 }
