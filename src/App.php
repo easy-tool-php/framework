@@ -8,7 +8,7 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 class App
 {
     private App\Cache\Manager $cacheManager;
-    private App\Config $config;
+    private App\Config\Manager $configManager;
     private App\Event\Manager $eventManager;
     private App\FileManager $fileManager;
     private App\Module\Manager $moduleManager;
@@ -18,7 +18,7 @@ class App
 
     public function __construct(
         App\Cache\Manager $cacheManager,
-        App\Config $config,
+        App\Config\Manager $configManager,
         App\Event\Manager $eventManager,
         App\FileManager $fileManager,
         App\Module\Manager $moduleManager,
@@ -28,7 +28,7 @@ class App
     ) {
         $this->cacheManager = $cacheManager;
         $this->classLoader = $classLoader;
-        $this->config = $config;
+        $this->configManager = $configManager;
         $this->directoryRoot = $directoryRoot;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;

@@ -16,9 +16,9 @@ class DataObject
      *
      * @return mixed
      */
-    public function get(?string $key = null)
+    public function get(string $key)
     {
-        return $key ? ($this->data[$key] ?? null) : $this->data;
+        return $this->data[$key] ?? null;
     }
 
     /**
@@ -33,9 +33,19 @@ class DataObject
     }
 
     /**
+     * Get whole data
+     *
+     * @return mixed
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
+
+    /**
      * Set whole data
      *
-     * @param array $data  Data array, format is like ['key_a' => $valueA, 'key_b' => $valueB, ...]
+     * @param array $data Data array, format is like ['key_a' => $valueA, 'key_b' => $valueB, ...]
      */
     public function setData(array $data): DataObject
     {
@@ -46,7 +56,7 @@ class DataObject
     /**
      * Append data, override when a key exists.
      *
-     * @param array $data  Data array, format is like ['key_a' => $valueA, 'key_b' => $valueB, ...]
+     * @param array $data Data array, format is like ['key_a' => $valueA, 'key_b' => $valueB, ...]
      */
     public function addData(array $data): DataObject
     {

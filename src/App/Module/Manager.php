@@ -4,14 +4,13 @@ namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
-use EasyTool\Framework\App\Config\Configurable;
+use EasyTool\Framework\App\Config\Config;
+use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\FileManager;
 
 class Manager
 {
-    use Configurable;
-
     public const APP_MODULES = 'modules';
     public const CONFIG_NAME = 'modules';
     public const CONFIG_FILE = 'config/module.php';
@@ -21,6 +20,7 @@ class Manager
     public const MODULE_ROUTE = 'route';
 
     private CacheManager $cacheManager;
+    private Config $config;
     private EventManager $eventManager;
     private FileManager $fileManager;
 
@@ -29,10 +29,12 @@ class Manager
 
     public function __construct(
         CacheManager $cacheManager,
+        ConfigManager $configManager,
         EventManager $eventManager,
         FileManager $fileManager
     ) {
         $this->cacheManager = $cacheManager;
+        $this->config = $configManager->getConfig(self::CONFIG_NAME);
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
     }
@@ -42,7 +44,7 @@ class Manager
      */
     public function initialize(ClassLoader $classLoader): void
     {
-        $this->moduleStatus = $this->initConfig();
+        $this->moduleStatus = $this->config->getData();
 
         /**
          * Assign the sub-folders under `app/modules` as PSR-4 directory,
@@ -60,7 +62,7 @@ class Manager
                 }
             }
         }
-        $this->updateConfig($this->moduleStatus);
+        $this->config->setData($this->moduleStatus)->save();
     }
 
     /**

@@ -18,7 +18,8 @@
         }
     },
     "require": {
-        "symfony/console": "*"
+        "symfony/console": "^5.4",
+        "laminas/laminas-code": "^3.5"
     },
     "autoload": {
         "psr-4": {

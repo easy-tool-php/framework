@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\App\Event;
 
-use EasyTool\Framework\App\Config\Configurable;
+use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Data\DataObject;
 use EasyTool\Framework\App\ObjectManager;
 use Exception;
@@ -10,10 +10,9 @@ use ReflectionException;
 
 class Manager
 {
-    use Configurable;
-
     public const CONFIG_NAME = 'events';
 
+    private ConfigManager $configManager;
     private ObjectManager $objectManager;
 
     /**
@@ -21,8 +20,11 @@ class Manager
      */
     private array $events = [];
 
-    public function __construct(ObjectManager $objectManager)
-    {
+    public function __construct(
+        ConfigManager $configManager,
+        ObjectManager $objectManager
+    ) {
+        $this->configManager = $configManager;
         $this->objectManager = $objectManager;
     }
 
@@ -31,7 +33,8 @@ class Manager
      */
     public function initialize(): void
     {
-        foreach ($this->initConfig() as $name => $observer) {
+        $events = $this->configManager->getConfig(self::CONFIG_NAME)->getData();
+        foreach ($events as $name => $observer) {
             $this->addEvent($name, $observer);
         }
     }
@@ -39,7 +42,7 @@ class Manager
     /**
      * Add event observer
      *
-     * @param array|string $observer  Observer name
+     * @param array|string $observer Observer name
      */
     public function addEvent(string $name, $observer): void
     {
