@@ -4,9 +4,15 @@ namespace EasyTool\Framework\App\Cache;
 
 use Psr\SimpleCache\CacheInterface;
 
-abstract class AbstractCache implements CacheInterface
+class Cache implements CacheInterface
 {
+    protected Adapter\AdapterInterface $adapter;
     protected array $data = [];
+
+    public function __construct(Adapter\AdapterInterface $adapter)
+    {
+        $this->adapter = $adapter;
+    }
 
     /**
      * @inheritDoc
