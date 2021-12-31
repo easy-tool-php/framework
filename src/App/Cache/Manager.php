@@ -9,6 +9,8 @@ use EasyTool\Framework\App\ObjectManager;
 class Manager
 {
     public const CONFIG_NAME = 'cache';
+    public const ATTR_ADAPTER = 'adapter';
+    public const ATTR_STATUS = 'status';
 
     private AppConfig $config;
     private ConfigManager $configManager;
@@ -34,12 +36,17 @@ class Manager
     /**
      * Get cache by given name
      */
-    public function getCache(string $name)
+    public function getCache(string $name): Cache
     {
         if (!isset($this->caches[$name])) {
+            $status = $this->config->get(self::ATTR_STATUS);
             $this->caches[$name] = $this->objectManager->create(
                 Cache::class,
-                ['adapter' => $this->objectManager->create($this->config->get('adapter'))]
+                [
+                    'adapter' => $this->objectManager->get($this->config->get(self::ATTR_ADAPTER)),
+                    'name' => $name,
+                    'isEnabled' => $status[$name] ?? true
+                ]
             );
         }
         return $this->caches[$name];

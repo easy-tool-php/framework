@@ -11,6 +11,7 @@ use EasyTool\Framework\App\FileManager;
 class Manager
 {
     public const APP_MODULES = 'modules';
+    public const CACHE_NAME = 'modules';
     public const CONFIG_NAME = 'modules';
     public const CONFIG_FILE = 'config/module.php';
 
@@ -45,6 +46,9 @@ class Manager
     {
         $config = $this->configManager->getConfig(self::CONFIG_NAME);
         $this->moduleStatus = $config->getData();
+
+        $cache = $this->cacheManager->getCache(self::CACHE_NAME);
+        $cache->get('modules');
 
         /**
          * Assign the sub-folders under `app/modules` as PSR-4 directory,

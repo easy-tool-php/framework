@@ -8,10 +8,16 @@ class Cache implements CacheInterface
 {
     protected Adapter\AdapterInterface $adapter;
     protected array $data = [];
+    protected bool $isEnabled;
+    protected string $name;
 
-    public function __construct(Adapter\AdapterInterface $adapter)
+    public function __construct(Adapter\AdapterInterface $adapter, string $name, bool $isEnabled)
     {
         $this->adapter = $adapter;
+        $this->isEnabled = $isEnabled;
+        $this->name = $name;
+
+        $this->data = $this->adapter->load($this->name);
     }
 
     /**
@@ -100,8 +106,20 @@ class Cache implements CacheInterface
         return true;
     }
 
+    /**
+     * Save data
+     */
+    public function save(): Cache
+    {
+        $this->adapter->save($this->name, $this->data);
+        return $this;
+    }
+
+    /**
+     * Save the data on destruct
+     */
     public function __destruct()
     {
-        $this->adapter->save($this->data);
+        $this->save();
     }
 }

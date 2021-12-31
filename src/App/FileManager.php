@@ -7,6 +7,7 @@ use Exception;
 class FileManager
 {
     public const DIR_APP = 'app';
+    public const DIR_CACHE = 'cache';
     public const DIR_CONFIG = 'config';
     public const DIR_LOG = 'log';
     public const DIR_PUB = 'pub';
@@ -32,6 +33,9 @@ class FileManager
         switch ($type) {
             case self::DIR_APP:
                 return $this->directoryRoot . '/app';
+
+            case self::DIR_CACHE:
+                return $this->directoryRoot . '/var/cache';
 
             case self::DIR_CONFIG:
                 return $this->directoryRoot . '/app/config';
