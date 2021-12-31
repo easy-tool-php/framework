@@ -4,7 +4,6 @@ namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
-use EasyTool\Framework\App\Config\Config;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\FileManager;
@@ -20,7 +19,7 @@ class Manager
     public const MODULE_ROUTE = 'route';
 
     private CacheManager $cacheManager;
-    private Config $config;
+    private ConfigManager $configManager;
     private EventManager $eventManager;
     private FileManager $fileManager;
 
@@ -34,7 +33,7 @@ class Manager
         FileManager $fileManager
     ) {
         $this->cacheManager = $cacheManager;
-        $this->config = $configManager->getConfig(self::CONFIG_NAME);
+        $this->configManager = $configManager;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
     }
@@ -44,7 +43,8 @@ class Manager
      */
     public function initialize(ClassLoader $classLoader): void
     {
-        $this->moduleStatus = $this->config->getData();
+        $config = $this->configManager->getConfig(self::CONFIG_NAME);
+        $this->moduleStatus = $config->getData();
 
         /**
          * Assign the sub-folders under `app/modules` as PSR-4 directory,
@@ -57,12 +57,12 @@ class Manager
 
         foreach ($classLoader->getPrefixesPsr4() as $directoryGroup) {
             foreach ($directoryGroup as $directory) {
-                if (($config = $this->checkModuleConfig($directory))) {
-                    $this->initModule($config, $directory);
+                if (($moduleConfig = $this->checkModuleConfig($directory))) {
+                    $this->initModule($moduleConfig, $directory);
                 }
             }
         }
-        $this->config->setData($this->moduleStatus)->save();
+        $config->setData($this->moduleStatus)->save();
     }
 
     /**

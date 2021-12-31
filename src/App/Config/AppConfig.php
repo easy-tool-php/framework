@@ -6,7 +6,7 @@ use EasyTool\Framework\App\FileManager;
 use EasyTool\Framework\Code\Generator\ArrayGenerator;
 use Laminas\Code\Generator\FileGenerator;
 
-class AppConfig extends Config
+class AppConfig extends AbstractConfig
 {
     private FileManager $fileManager;
 

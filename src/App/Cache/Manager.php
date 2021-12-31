@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\App\Cache;
 
-use EasyTool\Framework\App\Config\Configurable;
+use EasyTool\Framework\App\Config\AppConfig;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\ObjectManager;
 
@@ -10,7 +10,7 @@ class Manager
 {
     public const CONFIG_NAME = 'cache';
 
-    private Config $config;
+    private AppConfig $config;
     private ConfigManager $configManager;
     private ObjectManager $objectManager;
     private array $caches = [];

@@ -15,7 +15,7 @@ class Manager
         $this->objectManager = $objectManager;
     }
 
-    public function getConfig(string $name, $class = AppConfig::class): Config
+    public function getConfig(string $name, $class = AppConfig::class): AbstractConfig
     {
         if (!isset($this->configs[$name])) {
             $this->configs[$name] = $this->objectManager->create($class, ['name' => $name]);

@@ -4,7 +4,7 @@ namespace EasyTool\Framework\App\Config;
 
 use EasyTool\Framework\App\Data\DataObject;
 
-abstract class Config extends DataObject
+abstract class AbstractConfig extends DataObject
 {
     protected string $name;
 
@@ -22,5 +22,5 @@ abstract class Config extends DataObject
     /**
      * Store data of the configuration
      */
-    abstract public function save(): Config;
+    abstract public function save(): AbstractConfig;
 }

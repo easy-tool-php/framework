@@ -99,4 +99,9 @@ class Cache implements CacheInterface
         }
         return true;
     }
+
+    public function __destruct()
+    {
+        $this->adapter->save($this->data);
+    }
 }
