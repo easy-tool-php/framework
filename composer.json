@@ -17,11 +17,6 @@
             "homepage": "https://zengliwei.github.io"
         }
     ],
-    "extra": {
-        "branch-alias": {
-            "dev-main": "1.0-dev"
-        }
-    },
     "require": {
         "symfony/console": "^5.4",
         "psr/log": "*",
