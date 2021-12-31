@@ -21,7 +21,6 @@
         "laminas/laminas-code": "*",
         "symfony/console": "*",
         "psr/log": "*",
-        "psr/cache": "*",
         "psr/http-message": "*",
         "psr/container": "*",
         "psr/link": "*",
