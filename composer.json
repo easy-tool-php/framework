@@ -1,7 +1,12 @@
 {
     "name": "easy-tool/framework",
     "description": "A simple PHP framework built with composer",
-    "keywords": ["frame", "php", "composer", "psr-12"],
+    "keywords": [
+        "frame",
+        "php",
+        "composer",
+        "psr-12"
+    ],
     "homepage": "https://easy-tool-php.github.io",
     "type": "library",
     "license": "MIT",
@@ -19,7 +24,16 @@
     },
     "require": {
         "symfony/console": "^5.4",
-        "laminas/laminas-code": "^3.5"
+        "psr/log": "*",
+        "psr/cache": "*",
+        "psr/http-message": "*",
+        "psr/container": "*",
+        "psr/link": "*",
+        "psr/event-dispatcher": "*",
+        "psr/http-server-handler": "*",
+        "psr/simple-cache": "*",
+        "psr/http-factory": "*",
+        "psr/http-client": "*"
     },
     "autoload": {
         "psr-4": {
