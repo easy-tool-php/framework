@@ -18,7 +18,8 @@
         }
     ],
     "require": {
-        "symfony/console": "^5.4",
+        "laminas/code": "*",
+        "symfony/console": "*",
         "psr/log": "*",
         "psr/cache": "*",
         "psr/http-message": "*",
