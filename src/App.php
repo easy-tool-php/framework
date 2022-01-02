@@ -40,7 +40,12 @@ class App
 
     private function initialize()
     {
+        /**
+         * Initializing of file manager MUST be executed at the first,
+         *     otherwise the system will not be able to find the correct position of config files.
+         */
         $this->fileManager->initialize($this->directoryRoot);
+        $this->objectManager->initialize();
         $this->eventManager->initialize();
         $this->cacheManager->initialize();
         $this->moduleManager->initialize($this->classLoader);

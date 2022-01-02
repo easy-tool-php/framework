@@ -10,6 +10,7 @@ class FileManager
     public const DIR_CACHE = 'cache';
     public const DIR_CONFIG = 'config';
     public const DIR_LOG = 'log';
+    public const DIR_MODULES = 'app/modules';
     public const DIR_PUB = 'pub';
     public const DIR_ROOT = 'root';
     public const DIR_TMP = 'tmp';
@@ -31,29 +32,32 @@ class FileManager
     public function getDirectoryPath(string $type): string
     {
         switch ($type) {
+            case self::DIR_ROOT:
+                return $this->directoryRoot . '/';
+
             case self::DIR_APP:
                 return $this->directoryRoot . '/app';
-
-            case self::DIR_CACHE:
-                return $this->directoryRoot . '/var/cache';
 
             case self::DIR_CONFIG:
                 return $this->directoryRoot . '/app/config';
 
-            case self::DIR_LOG:
-                return $this->directoryRoot . '/var/log';
+            case self::DIR_MODULES:
+                return $this->directoryRoot . '/app/modules';
 
             case self::DIR_PUB:
                 return $this->directoryRoot . '/pub';
 
-            case self::DIR_ROOT:
-                return $this->directoryRoot . '/';
+            case self::DIR_VAR:
+                return $this->directoryRoot . '/var';
+
+            case self::DIR_CACHE:
+                return $this->directoryRoot . '/var/cache';
+
+            case self::DIR_LOG:
+                return $this->directoryRoot . '/var/log';
 
             case self::DIR_TMP:
                 return $this->directoryRoot . '/var/tmp';
-
-            case self::DIR_VAR:
-                return $this->directoryRoot . '/var';
 
             default:
                 throw new Exception('Directory type is not supported.');

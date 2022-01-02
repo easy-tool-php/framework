@@ -2,12 +2,15 @@
 
 namespace EasyTool\Framework\App;
 
+use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use Exception;
 use ReflectionException;
 use ReflectionParameter;
 
 class ObjectManager
 {
+    public const CONFIG_NAME = 'di';
+
     private static ?ObjectManager $instance = null;
 
     /**
@@ -29,6 +32,17 @@ class ObjectManager
             self::$instance = new ObjectManager();
         }
         return self::$instance;
+    }
+
+    /**
+     * Collect class aliases from `app/config/di.php` and define default dependency injection
+     */
+    public function initialize(): void
+    {
+        /** @var ConfigManager $configManager */
+        $configManager = $this->get(ConfigManager::class);
+        $classAliases = $configManager->getConfig(self::CONFIG_NAME)->getData();
+        $this->collectClassAliases($classAliases);
     }
 
     /**

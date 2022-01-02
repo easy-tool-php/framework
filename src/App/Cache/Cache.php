@@ -8,8 +8,8 @@ class Cache implements CacheInterface
 {
     protected Adapter\AdapterInterface $adapter;
     protected array $data = [];
-    protected bool $isEnabled;
     protected string $name;
+    protected bool $isEnabled;
 
     public function __construct(Adapter\AdapterInterface $adapter, string $name, bool $isEnabled)
     {
@@ -18,6 +18,14 @@ class Cache implements CacheInterface
         $this->name = $name;
 
         $this->data = $this->adapter->load($this->name);
+    }
+
+    /**
+     * Check whether the cache is enabled
+     */
+    public function isEnabled(): bool
+    {
+        return $this->isEnabled;
     }
 
     /**
