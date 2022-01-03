@@ -2,31 +2,60 @@
 
 namespace EasyTool\Framework\Validation;
 
+use EasyTool\Framework\App\Exception\ClassNotFound;
 use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\Code\VariableTransformer;
+use EasyTool\Framework\Validation\Exception\RuleNotFound;
 
 class Validator
 {
     public const RULE_SEPARATOR = '|';
 
     protected ObjectManager $objectManager;
+    protected VariableTransformer $variableTransformer;
+
     protected array $rules = [];
     protected array $data = [];
 
     public function __construct(
-        ObjectManager $objectManager
+        ObjectManager $objectManager,
+        VariableTransformer $variableTransformer
     ) {
         $this->objectManager = $objectManager;
+        $this->variableTransformer = $variableTransformer;
     }
 
     /**
      * Add a rule
      */
-    public function addRule(string $field, string $rule): Validator
+    public function addRule(string $field, $rule): Validator
     {
         if (!isset($this->rules[$field])) {
             $this->rules[$field] = [];
         }
         $this->rules[$field][] = $rule;
+        return $this;
+    }
+
+    /**
+     * Rules format is like:
+     * [
+     *     'field_1' => 'validate_name',
+     *     'field_2' => ['validate_name_1', 'validate_name_2' => ['param_1', 'param_2']]
+     * ]
+     */
+    public function addRules(array $rules): Validator
+    {
+        foreach ($rules as $field => $ruleGroup) {
+            if (is_array($ruleGroup)) {
+                foreach ($ruleGroup as $index => $rule) {
+                    $rule = is_numeric($index) ? $rule : [$index => $rule];
+                    $this->addRule($field, $rule);
+                }
+            } else {
+                $this->addRule($field, $ruleGroup);
+            }
+        }
         return $this;
     }
 
@@ -40,20 +69,57 @@ class Validator
     }
 
     /**
+     * Clean data and rules
+     */
+    public function reset(): Validator
+    {
+        $this->data = [];
+        $this->rules = [];
+        return $this;
+    }
+
+    /**
      * Parse a given rule, return a validation object and an array of parameters
      */
-    protected function parseRule(string $rule): array
+    protected function parseRule($rule): array
     {
-        $parameters = explode(self::RULE_SEPARATOR, $rule);
-        $validator = array_shift($parameters);
-        return [$this->objectManager->get($validator), $parameters];
+        if (is_string($rule)) {
+            $parameters = explode(self::RULE_SEPARATOR, $rule);
+            $validateName = array_shift($parameters);
+        } else {
+            $validateName = $parameters = null;
+            foreach ($rule as $validateName => $parameters) {
+            }
+        }
+        switch ($validateName) {
+            case 'required':
+            case 'is_array':
+            case 'options':
+                $validateClass = static::class . '\\' . $this->variableTransformer->snakeToHump($validateName);
+                break;
+            default:
+                $validateClass = $validateName;
+        }
+        try {
+            $validator = $this->objectManager->get($validateClass);
+        } catch (ClassNotFound $e) {
+            throw new RuleNotFound(sprintf('Specified validator `%s` is not found.', $validateName));
+        }
+        return [$validator, $parameters];
     }
 
     /**
      * Validate
      */
-    public function validate(): bool
+    public function validate($rules = [], $data = []): bool
     {
+        if (!empty($rules)) {
+            $this->rules = [];
+            $this->addRules($rules);
+        }
+        if (!empty($data)) {
+            $this->data = $data;
+        }
         foreach ($this->rules as $field => $rules) {
             foreach ($rules as $rule) {
                 [$validator, $parameters] = $this->parseRule($rule);

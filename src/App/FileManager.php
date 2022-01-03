@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App;
 
+use EasyTool\Framework\App\Exception\FileException;
 use Exception;
 
 class FileManager
@@ -60,7 +61,7 @@ class FileManager
                 return $this->directoryRoot . '/var/tmp';
 
             default:
-                throw new Exception('Directory type is not supported.');
+                throw new FileException('Directory type is not supported.');
         }
     }
 
@@ -87,7 +88,7 @@ class FileManager
             closedir($handler);
             return $subFolders;
         }
-        throw new Exception('Specified path is not a folder or could not be accessed.');
+        throw new FileException('Specified path is not a folder or could not be accessed.');
     }
 
     /**

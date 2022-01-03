@@ -3,10 +3,13 @@
 namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
+use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
+use EasyTool\Framework\App\Exception\ModuleNotFound;
 use EasyTool\Framework\App\FileManager;
+use EasyTool\Framework\Validation\Validator;
 
 class Manager
 {
@@ -28,6 +31,7 @@ class Manager
     private ConfigManager $configManager;
     private EventManager $eventManager;
     private FileManager $fileManager;
+    private Validator $validator;
 
     private array $moduleStatus = [];
 
@@ -40,12 +44,14 @@ class Manager
         CacheManager $cacheManager,
         ConfigManager $configManager,
         EventManager $eventManager,
-        FileManager $fileManager
+        FileManager $fileManager,
+        Validator $validator
     ) {
         $this->cacheManager = $cacheManager;
         $this->configManager = $configManager;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
+        $this->validator = $validator;
     }
 
     /**
@@ -55,8 +61,8 @@ class Manager
     {
         $cache = $this->cacheManager->getCache(self::CACHE_NAME);
         if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
-            $this->modules = $cachedModules;
-            return;
+            //$this->modules = $cachedModules;
+            //return;
         }
 
         $config = $this->configManager->getConfig(self::CONFIG_NAME);
@@ -102,7 +108,7 @@ class Manager
             }
             foreach ($module[self::MODULE_DEPENDS] as $depend) {
                 if (!isset($this->modules[$depend])) {
-                    throw new \Exception(
+                    throw new ModuleNotFound(
                         sprintf(
                             'Module dependency `%s` of module `%s` does not exist.',
                             $depend,
@@ -139,7 +145,14 @@ class Manager
     {
         return (is_file(($configFile = $directory . '/' . self::CONFIG_FILE))
             && is_array(($config = require $configFile))
-            && !empty($config[self::MODULE_NAME]))
+            && $this->validator->validate(
+                [
+                    self::MODULE_NAME => ['required'],
+                    self::MODULE_DEPENDS => ['is_array'],
+                    self::MODULE_ROUTE => ['is_array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
+                ],
+                $config
+            ))
             ? $config : null;
     }
 
