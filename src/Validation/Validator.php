@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\Validation;
 
-use EasyTool\Framework\App\Exception\ClassNotFound;
+use EasyTool\Framework\App\Exception\ClassException;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Code\VariableTransformer;
 use EasyTool\Framework\Validation\Exception\RuleNotFound;
@@ -83,26 +83,31 @@ class Validator
      */
     protected function parseRule($rule): array
     {
+        $validateName = $parameters = null;
         if (is_string($rule)) {
             $parameters = explode(self::RULE_SEPARATOR, $rule);
             $validateName = array_shift($parameters);
         } else {
-            $validateName = $parameters = null;
             foreach ($rule as $validateName => $parameters) {
             }
         }
         switch ($validateName) {
             case 'required':
-            case 'is_array':
             case 'options':
                 $validateClass = static::class . '\\' . $this->variableTransformer->snakeToHump($validateName);
+                break;
+            case 'array':
+            case 'int':
+            case 'numeric':
+                $validateClass = static::class . '\\IsTypeOf';
+                $parameters = [$validateName];
                 break;
             default:
                 $validateClass = $validateName;
         }
         try {
             $validator = $this->objectManager->get($validateClass);
-        } catch (ClassNotFound $e) {
+        } catch (ClassException $e) {
             throw new RuleNotFound(sprintf('Specified validator `%s` is not found.', $validateName));
         }
         return [$validator, $parameters];

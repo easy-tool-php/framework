@@ -9,11 +9,6 @@ class Required extends AbstractValidator
      */
     public function validate(array $data, string $field, array $params = []): bool
     {
-        try {
-            $this->getValue($field, $data);
-            return true;
-        } catch (\Exception $e) {
-            return false;
-        }
+        return !empty($this->getMatchedValues(explode('.', $field), $data));
     }
 }

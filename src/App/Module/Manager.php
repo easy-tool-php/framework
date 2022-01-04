@@ -121,7 +121,7 @@ class Manager
     }
 
     /**
-     * Sort modules based on the `depends` field of config
+     * Sort modules based on the `depends` attribute
      */
     private function sortModules($a, $b)
     {
@@ -148,8 +148,8 @@ class Manager
             && $this->validator->validate(
                 [
                     self::MODULE_NAME => ['required'],
-                    self::MODULE_DEPENDS => ['is_array'],
-                    self::MODULE_ROUTE => ['is_array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
+                    self::MODULE_DEPENDS => ['array'],
+                    self::MODULE_ROUTE => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
                 ],
                 $config
             ))

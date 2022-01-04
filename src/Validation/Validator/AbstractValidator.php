@@ -2,25 +2,41 @@
 
 namespace EasyTool\Framework\Validation\Validator;
 
-use EasyTool\Framework\Validation\Exception\FieldNotFound;
-
 abstract class AbstractValidator
 {
     /**
-     * Parse field
+     * Collect values from given data which match the specified path
      */
-    protected function getValue($field, $data)
+    protected function getMatchedValues(array $path, array $data): array
     {
-        $path = explode('.', $field);
-        $tmp = $data;
-        foreach ($path as $section) {
-            if (isset($tmp[$section])) {
-                $tmp = $tmp[$section];
-            } else {
-                throw new FieldNotFound(sprintf('Section `%s` does not exist.', $section));
+        $values = [];
+
+        $childPath = $path;
+        $section = array_shift($childPath);
+
+        if (count($path) > 1) {
+            if ($section == '*') {
+                if (is_array($data)) {
+                    foreach ($data as $child) {
+                        $values = array_merge($values, $this->getMatchedChildren($childPath, $child));
+                    }
+                }
+            } elseif (isset($data[$section])) {
+                $values = array_merge($values, $this->getMatchedChildren($childPath, $data[$section]));
             }
+            return $values;
         }
-        return $tmp;
+
+        if ($section == '*') {
+            if (is_array($data)) {
+                foreach ($data as $child) {
+                    $values[] = $child;
+                }
+            }
+        } elseif (isset($data[$section])) {
+            $values[] = $data[$section];
+        }
+        return $values;
     }
 
     /**

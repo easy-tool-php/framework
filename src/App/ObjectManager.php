@@ -3,7 +3,7 @@
 namespace EasyTool\Framework\App;
 
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
-use EasyTool\Framework\App\Exception\ClassNotFound;
+use EasyTool\Framework\App\Exception\ClassException;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionParameter;
@@ -70,13 +70,17 @@ class ObjectManager
      *
      * @param array $argumentArr Argument array, format is like ['argument_name' => $value]
      * @throws ReflectionException
-     * @throws ClassNotFound
+     * @throws ClassException
      */
     public function create(string $classAlias, array $argumentArr = []): object
     {
-        $classAlias = trim($classAlias, '\\');
+        try {
+            $classAlias = trim($classAlias, '\\');
+            $reflectionClass = new ReflectionClass('\\' . $classAlias);
+        } catch (ReflectionException $e) {
+            throw new ClassException(sprintf('Class `%s` does not exist.', $classAlias));
+        }
 
-        $reflectionClass = new ReflectionClass('\\' . $classAlias);
         if (!($constructor = $reflectionClass->getConstructor())) {
             return $reflectionClass->newInstanceWithoutConstructor();
         }
@@ -91,7 +95,7 @@ class ObjectManager
             } elseif (($injectedClass = $parameter->getType())) {
                 $arguments[] = $this->get($injectedClass->getName());
             } else {
-                throw new ClassNotFound(
+                throw new ClassException(
                     sprintf('Argument `%s` of class `%s` is required.', $parameter->getName(), $classAlias)
                 );
             }
@@ -102,7 +106,7 @@ class ObjectManager
     /**
      * Get a singleton with specified alias, create one when it does not exist.
      *
-     * @throws ReflectionException|ClassNotFound
+     * @throws ReflectionException|ClassException
      */
     public function get(string $classAlias, array $argumentArr = []): object
     {

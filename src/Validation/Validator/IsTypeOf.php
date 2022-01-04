@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\Validation\Validator;
 
-class Options extends AbstractValidator
+class IsTypeOf extends AbstractValidator
 {
     /**
      * @inheritDoc
@@ -13,11 +13,10 @@ class Options extends AbstractValidator
             return true;
         }
 
+        [$type] = $params;
         foreach ($values as $value) {
-            foreach (array_keys($value) as $option) {
-                if (!in_array($option, $params)) {
-                    return false;
-                }
+            if (!('is_' . $type)($value)) {
+                return false;
             }
         }
         return true;
