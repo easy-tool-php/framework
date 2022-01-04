@@ -7,8 +7,9 @@ use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
-use EasyTool\Framework\App\Exception\ModuleNotFound;
+use EasyTool\Framework\App\Exception\ModuleException;
 use EasyTool\Framework\App\FileManager;
+use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Validation\Validator;
 
 class Manager
@@ -31,6 +32,7 @@ class Manager
     private ConfigManager $configManager;
     private EventManager $eventManager;
     private FileManager $fileManager;
+    private ObjectManager $objectManager;
     private Validator $validator;
 
     private array $moduleStatus = [];
@@ -45,12 +47,14 @@ class Manager
         ConfigManager $configManager,
         EventManager $eventManager,
         FileManager $fileManager,
+        ObjectManager $objectManager,
         Validator $validator
     ) {
         $this->cacheManager = $cacheManager;
         $this->configManager = $configManager;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
+        $this->objectManager = $objectManager;
         $this->validator = $validator;
     }
 
@@ -108,7 +112,7 @@ class Manager
             }
             foreach ($module[self::MODULE_DEPENDS] as $depend) {
                 if (!isset($this->modules[$depend])) {
-                    throw new ModuleNotFound(
+                    throw new ModuleException(
                         sprintf(
                             'Module dependency `%s` of module `%s` does not exist.',
                             $depend,
@@ -177,5 +181,7 @@ class Manager
      */
     private function initModule(array $config): void
     {
+        //$this->eventManager->addEvent();
+        //$this->objectManager->collectClassAliases();
     }
 }

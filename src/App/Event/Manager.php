@@ -3,12 +3,13 @@
 namespace EasyTool\Framework\App\Event;
 
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
-use EasyTool\Framework\App\Data\DataObject;
 use EasyTool\Framework\App\ObjectManager;
 use Exception;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\EventDispatcher\ListenerProviderInterface;
 use ReflectionException;
 
-class Manager
+class Manager implements ListenerProviderInterface, EventDispatcherInterface
 {
     public const CONFIG_NAME = 'events';
 
@@ -16,9 +17,9 @@ class Manager
     private ObjectManager $objectManager;
 
     /**
-     * Event array, format is like ['event_name' => [$observerA, $observerB, ...]]
+     * listener array, format is like ['event_name' => [$listenerA, $listenerB, ...]]
      */
-    private array $events = [];
+    private array $listeners = [];
 
     public function __construct(
         ConfigManager $configManager,
@@ -33,34 +34,34 @@ class Manager
      */
     public function initialize(): void
     {
-        $events = $this->configManager->getConfig(self::CONFIG_NAME)->getData();
-        foreach ($events as $name => $observer) {
-            $this->addEvent($name, $observer);
+        $listeners = $this->configManager->getConfig(self::CONFIG_NAME)->getData();
+        foreach ($listeners as $name => $listener) {
+            $this->addListener($name, $listener);
         }
     }
 
     /**
-     * Add event observer
+     * Add event listener
      *
-     * @param array|string $observer Observer name
+     * @param array|string $listener Observer name
      */
-    public function addEvent(string $name, $observer): void
+    public function addListener(string $name, $listener): void
     {
-        if (!isset($this->events[$name])) {
-            $this->events[$name] = [];
+        if (!isset($this->listeners[$name])) {
+            $this->listeners[$name] = [];
         }
-        if (!is_array($observer)) {
-            $observer = [$observer];
+        if (!is_array($listener)) {
+            $listener = [$listener];
         }
-        $this->events[$name] = array_merge($this->events[$name], $observer);
+        $this->listeners[$name] = array_merge($this->listeners[$name], $listener);
     }
 
     /**
      * Get all events
      */
-    public function getEvents(): array
+    public function getListenersForEvent(object $event): iterable
     {
-        return $this->events;
+        return $this->listeners;
     }
 
     /**
@@ -69,12 +70,14 @@ class Manager
      * @throws ReflectionException
      * @throws Exception
      */
-    public function dispatch(string $name, array $data = []): void
+    public function dispatch(object $event): object
     {
-        if (!empty($this->events[$name])) {
-            foreach (array_unique($this->events[$name]) as $observer) {
-                $this->objectManager->create($observer)->execute(new DataObject($data));
+        $name = $event->get('name');
+        if (!empty($this->listeners[$name])) {
+            foreach (array_unique($this->listeners[$name]) as $listener) {
+                $this->objectManager->create($listener)->process($event);
             }
         }
+        return $event;
     }
 }

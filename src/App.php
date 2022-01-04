@@ -3,6 +3,7 @@
 namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
+use EasyTool\Framework\App\Data\DataObject;
 use Symfony\Component\Console\Application as ConsoleApplication;
 
 class App
@@ -73,5 +74,7 @@ class App
 
     public function handleHttp()
     {
+        $this->eventManager->dispatch(new DataObject(['name' => 'start_handle_http']));
+        $this->eventManager->dispatch(new DataObject(['name' => 'end_handle_http']));
     }
 }
