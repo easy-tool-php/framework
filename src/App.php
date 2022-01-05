@@ -5,6 +5,7 @@ namespace EasyTool\Framework;
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Data\DataObject;
 use Symfony\Component\Console\Application as ConsoleApplication;
+use EasyTool\Framework\App\Http\Server\Request\Handler as HttpRequestHandler;
 
 class App
 {
@@ -25,6 +26,7 @@ class App
         App\Module\Manager $moduleManager,
         App\ObjectManager $objectManager,
         ClassLoader $classLoader,
+        HttpRequestHandler $httpRequestHandler,
         string $directoryRoot
     ) {
         $this->cacheManager = $cacheManager;

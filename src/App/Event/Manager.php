@@ -17,7 +17,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     private ObjectManager $objectManager;
 
     /**
-     * listener array, format is like ['event_name' => [$listenerA, $listenerB, ...]]
+     * listener array, format is like ['event_name' => [$listenerClassA, $listenerClassB, ...]]
      */
     private array $listeners = [];
 
@@ -43,7 +43,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     /**
      * Add event listener
      *
-     * @param array|string $listener Observer name
+     * @param array|string $listener Listener name
      */
     public function addListener(string $name, $listener): void
     {
@@ -57,7 +57,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     }
 
     /**
-     * Get all events
+     * Get all listeners for given event
      */
     public function getListenersForEvent(object $event): iterable
     {

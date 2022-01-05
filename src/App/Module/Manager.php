@@ -129,12 +129,14 @@ class Manager
      */
     private function sortModules($a, $b)
     {
-        if (!empty($b[self::MODULE_DEPENDS])
+        if (
+            !empty($b[self::MODULE_DEPENDS])
             && in_array($a[self::MODULE_NAME], $b[self::MODULE_DEPENDS])
         ) {
             return 1;
         }
-        if (!empty($a[self::MODULE_DEPENDS])
+        if (
+            !empty($a[self::MODULE_DEPENDS])
             && in_array($b[self::MODULE_NAME], $a[self::MODULE_DEPENDS])
         ) {
             return -1;
