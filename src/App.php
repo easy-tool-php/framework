@@ -60,6 +60,9 @@ class App
         $this->moduleManager->initialize($this->classLoader);
     }
 
+    /**
+     * Return current version of the framework
+     */
     public function getVersion()
     {
         $composerConfig = json_decode($this->fileManager->getFileContents('composer.lock'), true);
@@ -72,7 +75,7 @@ class App
 
     public function handleCommand()
     {
-        /* @var $consoleApplication ConsoleApplication */
+        /** @var ConsoleApplication $consoleApplication */
         $consoleApplication = $this->objectManager->create(
             ConsoleApplication::class,
             ['name' => 'EasyTool', 'version' => $this->getVersion()]
@@ -83,7 +86,8 @@ class App
     public function handleHttp()
     {
         /** @var HttpRequest $httpRequest */
-        $httpRequest = $this->objectManager->get(HttpRequest::class);
+        /** @var HttpRequestHandler $httpRequestHandler */
+        $httpRequest = $this->objectManager->create(HttpRequest::class);
         $httpRequestHandler = $this->objectManager->get(HttpRequestHandler::class);
         $httpRequestHandler->handle($httpRequest);
     }

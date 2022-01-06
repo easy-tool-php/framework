@@ -3,6 +3,7 @@
 namespace EasyTool\Framework\App\Http;
 
 use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
 
 class Message implements MessageInterface
@@ -12,6 +13,12 @@ class Message implements MessageInterface
     protected StreamInterface $body;
     protected string $protocolVersion = self::PROTOCOL_VERSION;
     protected array $headers = [];
+
+    public function __construct(
+        StreamFactoryInterface $streamFactory
+    ) {
+        $this->body = $streamFactory->createStream();
+    }
 
     /**
      * @inheritDoc

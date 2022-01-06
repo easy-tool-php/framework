@@ -25,14 +25,14 @@ class Uri implements UriInterface
     {
         $info = parse_url($uri);
 
-        $this->scheme = $info['scheme'] ?: '';
-        $this->username = $info['user'] ?: '';
-        $this->password = $info['pass'] ?: null;
-        $this->host = $info['host'] ?: '';
-        $this->port = $info['port'] ?: null;
-        $this->path = $info['path'] ?: '';
-        $this->query = $info['query'] ?: '';
-        $this->fragment = $info['fragment'] ?: '';
+        $this->scheme = $info['scheme'] ?? '';
+        $this->username = $info['user'] ?? '';
+        $this->password = $info['pass'] ?? null;
+        $this->host = $info['host'] ?? '';
+        $this->port = $info['port'] ?? null;
+        $this->path = $info['path'] ?? '';
+        $this->query = $info['query'] ?? '';
+        $this->fragment = $info['fragment'] ?? '';
     }
 
     /**
