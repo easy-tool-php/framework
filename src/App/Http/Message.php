@@ -9,9 +9,9 @@ class Message implements MessageInterface
 {
     public const PROTOCOL_VERSION = '1.1';
 
-    private StreamInterface $body;
-    private string $protocolVersion = self::PROTOCOL_VERSION;
-    private array $headers = [];
+    protected StreamInterface $body;
+    protected string $protocolVersion = self::PROTOCOL_VERSION;
+    protected array $headers = [];
 
     /**
      * @inheritDoc

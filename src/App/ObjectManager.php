@@ -74,6 +74,11 @@ class ObjectManager
      */
     public function create(string $classAlias, array $argumentArr = []): object
     {
+        $classAlias = trim($classAlias, '\\');
+        if (isset($this->classAliases[$classAlias])) {
+            return $this->create($this->classAliases[$classAlias], $argumentArr);
+        }
+
         try {
             $classAlias = trim($classAlias, '\\');
             $reflectionClass = new ReflectionClass('\\' . $classAlias);
@@ -113,9 +118,6 @@ class ObjectManager
         $classAlias = trim($classAlias, '\\');
         if ($classAlias == self::class) {
             return self::getInstance();
-        }
-        if (isset($this->classAliases[$classAlias])) {
-            return $this->get($this->classAliases[$classAlias], $argumentArr);
         }
         if (!isset($this->singletons[$classAlias])) {
             $this->singletons[$classAlias] = $this->create($classAlias, $argumentArr);

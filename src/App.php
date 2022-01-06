@@ -3,30 +3,36 @@
 namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
-use EasyTool\Framework\App\Data\DataObject;
-use Symfony\Component\Console\Application as ConsoleApplication;
+use EasyTool\Framework\App\Cache\Manager as CacheManager;
+use EasyTool\Framework\App\Config\Manager as ConfigManager;
+use EasyTool\Framework\App\Event\Manager as EventManager;
+use EasyTool\Framework\App\FileManager;
+use EasyTool\Framework\App\Http\Server\Request as HttpRequest;
 use EasyTool\Framework\App\Http\Server\Request\Handler as HttpRequestHandler;
+use EasyTool\Framework\App\Module\Manager as ModuleManager;
+use EasyTool\Framework\App\ObjectManager;
+use Symfony\Component\Console\Application as ConsoleApplication;
 
 class App
 {
-    private App\Cache\Manager $cacheManager;
-    private App\Config\Manager $configManager;
-    private App\Event\Manager $eventManager;
-    private App\FileManager $fileManager;
-    private App\Module\Manager $moduleManager;
-    private App\ObjectManager $objectManager;
+    private CacheManager $cacheManager;
+    private ConfigManager $configManager;
+    private EventManager $eventManager;
+    private FileManager $fileManager;
+    private ModuleManager $moduleManager;
+    private ObjectManager $objectManager;
     private ClassLoader $classLoader;
+
     private string $directoryRoot;
 
     public function __construct(
-        App\Cache\Manager $cacheManager,
-        App\Config\Manager $configManager,
-        App\Event\Manager $eventManager,
-        App\FileManager $fileManager,
-        App\Module\Manager $moduleManager,
-        App\ObjectManager $objectManager,
+        CacheManager $cacheManager,
+        ConfigManager $configManager,
+        EventManager $eventManager,
+        FileManager $fileManager,
+        ModuleManager $moduleManager,
+        ObjectManager $objectManager,
         ClassLoader $classLoader,
-        HttpRequestHandler $httpRequestHandler,
         string $directoryRoot
     ) {
         $this->cacheManager = $cacheManager;
@@ -76,7 +82,9 @@ class App
 
     public function handleHttp()
     {
-        $this->eventManager->dispatch(new DataObject(['name' => 'start_handle_http']));
-        $this->eventManager->dispatch(new DataObject(['name' => 'end_handle_http']));
+        /** @var HttpRequest $httpRequest */
+        $httpRequest = $this->objectManager->get(HttpRequest::class);
+        $httpRequestHandler = $this->objectManager->get(HttpRequestHandler::class);
+        $httpRequestHandler->handle($httpRequest);
     }
 }

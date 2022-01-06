@@ -7,53 +7,71 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class Request extends HttpRequest implements ServerRequestInterface
 {
+    protected array $attributes;
+    protected array $cookieParams;
+    protected array $queryParams;
+    protected array $serverParams;
+    protected array $uploadedFiles;
+
+    protected $parsedBody;
+
     /**
      * @inheritDoc
      */
-    public function getServerParams()
+    public function getServerParams(): array
     {
+        return $this->serverParams;
     }
 
     /**
      * @inheritDoc
      */
-    public function getCookieParams()
+    public function getCookieParams(): array
     {
+        return $this->cookieParams;
     }
 
     /**
      * @inheritDoc
      */
-    public function withCookieParams(array $cookies)
+    public function withCookieParams(array $cookies): Request
     {
+        $this->cookieParams = $cookies;
+        return $this;
     }
 
     /**
      * @inheritDoc
      */
-    public function getQueryParams()
+    public function getQueryParams(): array
     {
+        return $this->queryParams;
     }
 
     /**
      * @inheritDoc
      */
-    public function withQueryParams(array $query)
+    public function withQueryParams(array $query): Request
     {
+        $this->queryParams = $query;
+        return $this;
     }
 
     /**
      * @inheritDoc
      */
-    public function getUploadedFiles()
+    public function getUploadedFiles(): array
     {
+        return $this->uploadedFiles;
     }
 
     /**
      * @inheritDoc
      */
-    public function withUploadedFiles(array $uploadedFiles)
+    public function withUploadedFiles(array $uploadedFiles): Request
     {
+        $this->uploadedFiles = $uploadedFiles;
+        return $this;
     }
 
     /**
@@ -61,17 +79,24 @@ class Request extends HttpRequest implements ServerRequestInterface
      */
     public function getParsedBody()
     {
+        return $this->parsedBody;
     }
 
     /**
      * @inheritDoc
      */
-    public function withParsedBody($data)
+    public function withParsedBody($data): Request
     {
+        $this->parsedBody = $data;
+        return $this;
     }
 
-    public function getAttributes()
+    /**
+     * @inheritDoc
+     */
+    public function getAttributes(): array
     {
+        return $this->attributes;
     }
 
     /**
@@ -79,19 +104,24 @@ class Request extends HttpRequest implements ServerRequestInterface
      */
     public function getAttribute($name, $default = null)
     {
+        return $this->attributes[$name] ?? $default;
     }
 
     /**
      * @inheritDoc
      */
-    public function withAttribute($name, $value)
+    public function withAttribute($name, $value): Request
     {
+        $this->attributes[$name] = $value;
+        return $this;
     }
 
     /**
      * @inheritDoc
      */
-    public function withoutAttribute($name)
+    public function withoutAttribute($name): Request
     {
+        unset($this->attributes[$name]);
+        return $this;
     }
 }

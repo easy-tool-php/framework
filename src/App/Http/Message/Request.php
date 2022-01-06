@@ -13,14 +13,9 @@ class Request extends Message implements RequestInterface
     public const METHOD_POST = 'POST';
     public const METHOD_DELETE = 'DELETE';
 
-    private string $method;
-    private ?string $requestTarget;
-    private UriInterface $uri;
-
-    public function __construct($method)
-    {
-        $this->method = $method;
-    }
+    protected string $method;
+    protected ?string $requestTarget;
+    protected UriInterface $uri;
 
     /**
      * @inheritDoc

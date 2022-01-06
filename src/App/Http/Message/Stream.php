@@ -18,8 +18,11 @@ class Stream implements StreamInterface
      */
     public function __toString()
     {
+        $orgPos = $this->tell();
         $this->rewind();
-        return $this->getContents();
+        $content = $this->getContents();
+        $this->seek($orgPos);
+        return $content;
     }
 
     /**
@@ -42,7 +45,11 @@ class Stream implements StreamInterface
      */
     public function getSize(): ?int
     {
-        return strlen($this->__toString());
+        $orgPos = $this->tell();
+        $this->seek(0, SEEK_END);
+        $size = $this->tell();
+        $this->seek($orgPos);
+        return $size;
     }
 
     /**
