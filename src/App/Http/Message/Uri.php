@@ -12,28 +12,14 @@ class Uri implements UriInterface
     public const PORT_HTTP = '80';
     public const PORT_HTTPS = '443';
 
-    private string $scheme;
-    private string $username;
-    private ?string $password;
-    private string $host;
-    private ?int $port;
-    private string $path;
-    private string $query;
-    private string $fragment;
-
-    public function __construct($uri = '')
-    {
-        $info = parse_url($uri);
-
-        $this->scheme = $info['scheme'] ?? '';
-        $this->username = $info['user'] ?? '';
-        $this->password = $info['pass'] ?? null;
-        $this->host = $info['host'] ?? '';
-        $this->port = $info['port'] ?? null;
-        $this->path = $info['path'] ?? '';
-        $this->query = $info['query'] ?? '';
-        $this->fragment = $info['fragment'] ?? '';
-    }
+    private string $scheme = '';
+    private string $username = '';
+    private ?string $password = null;
+    private string $host = '';
+    private ?int $port = null;
+    private string $path = '';
+    private string $query = '';
+    private string $fragment = '';
 
     /**
      * @inheritDoc
@@ -166,6 +152,25 @@ class Uri implements UriInterface
     public function withFragment($fragment): Uri
     {
         $this->fragment = $fragment;
+        return $this;
+    }
+
+    /**
+     * Parse a string and assign the parts
+     */
+    public function fromString(string $uri): Uri
+    {
+        $info = parse_url($uri);
+
+        $this->scheme = $info['scheme'] ?? '';
+        $this->username = $info['user'] ?? '';
+        $this->password = $info['pass'] ?? null;
+        $this->host = $info['host'] ?? '';
+        $this->port = $info['port'] ?? null;
+        $this->path = $info['path'] ?? '';
+        $this->query = $info['query'] ?? '';
+        $this->fragment = $info['fragment'] ?? '';
+
         return $this;
     }
 

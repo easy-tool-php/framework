@@ -9,7 +9,6 @@ use Psr\Http\Message\UriFactoryInterface;
 
 class Request extends HttpRequest implements ServerRequestInterface
 {
-
     protected array $attributes;
     protected array $cookieParams;
     protected array $queryParams;
@@ -27,13 +26,21 @@ class Request extends HttpRequest implements ServerRequestInterface
         $this->cookieParams = $_COOKIE;
         $this->uploadedFiles = $_FILES;
         $this->queryParams = $_GET;
+        $this->serverParams = array_change_key_case($_SERVER);
 
-        foreach ($_SERVER as $key => $value) {
-            $this->serverParams[strtolower($key)] = $value;
-        }
-
+        $this->withProtocolVersion(
+            substr(
+                $this->serverParams['server_protocol'],
+                strpos($this->serverParams['server_protocol'], '/') + 1
+            )
+        );
         $this->withMethod($this->serverParams['request_method']);
         $this->withBody($streamFactory->createStreamFromResource(fopen('php://input', 'r')));
+        $this->getUri()->fromString(
+            $this->serverParams['request_scheme'] . '://'
+            . $this->serverParams['http_host']
+            . $this->serverParams['request_uri']
+        );
 
         $this->processHeaders();
         $this->processBody();

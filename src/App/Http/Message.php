@@ -10,14 +10,15 @@ class Message implements MessageInterface
 {
     public const PROTOCOL_VERSION = '1.1';
 
-    protected StreamInterface $body;
+    protected StreamFactoryInterface $streamFactory;
+    protected ?StreamInterface $body = null;
     protected string $protocolVersion = self::PROTOCOL_VERSION;
     protected array $headers = [];
 
     public function __construct(
         StreamFactoryInterface $streamFactory
     ) {
-        $this->body = $streamFactory->createStream();
+        $this->streamFactory = $streamFactory;
     }
 
     /**
@@ -111,6 +112,9 @@ class Message implements MessageInterface
      */
     public function getBody(): StreamInterface
     {
+        if ($this->body === null) {
+            $this->body = $this->streamFactory->createStream();
+        }
         return $this->body;
     }
 
