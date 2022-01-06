@@ -8,18 +8,35 @@ use Psr\Http\Message\UriInterface;
 
 class Request extends Message implements RequestInterface
 {
-    /**
-     * @inheritDoc
-     */
-    public function getRequestTarget()
+    public const METHOD_GET = 'GET';
+    public const METHOD_PUT = 'PUT';
+    public const METHOD_POST = 'POST';
+    public const METHOD_DELETE = 'DELETE';
+
+    private string $method;
+    private ?string $requestTarget;
+    private UriInterface $uri;
+
+    public function __construct($method)
     {
+        $this->method = $method;
     }
 
     /**
      * @inheritDoc
      */
-    public function withRequestTarget($requestTarget)
+    public function getRequestTarget()
     {
+        return $this->requestTarget;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withRequestTarget($requestTarget): Request
+    {
+        $this->requestTarget = $requestTarget;
+        return $this;
     }
 
     /**
@@ -27,6 +44,7 @@ class Request extends Message implements RequestInterface
      */
     public function getMethod()
     {
+        return $this->method;
     }
 
     /**
@@ -34,13 +52,16 @@ class Request extends Message implements RequestInterface
      */
     public function withMethod($method)
     {
+        $this->method = $method;
+        return $this;
     }
 
     /**
      * @inheritDoc
      */
-    public function getUri()
+    public function getUri(): UriInterface
     {
+        return $this->uri;
     }
 
     /**
@@ -48,5 +69,7 @@ class Request extends Message implements RequestInterface
      */
     public function withUri(UriInterface $uri, $preserveHost = false)
     {
+        $this->uri = $uri;
+        return $this;
     }
 }
