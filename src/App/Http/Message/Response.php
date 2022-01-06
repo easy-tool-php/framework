@@ -7,24 +7,32 @@ use Psr\Http\Message\ResponseInterface;
 
 class Response extends Message implements ResponseInterface
 {
+    private int $statusCode;
+    private string $reasonPhrase;
+
     /**
      * @inheritDoc
      */
-    public function getStatusCode()
+    public function getStatusCode(): int
     {
+        return $this->statusCode;
     }
 
     /**
      * @inheritDoc
      */
-    public function withStatus($code, $reasonPhrase = '')
+    public function getReasonPhrase(): string
     {
+        return $this->reasonPhrase;
     }
 
     /**
      * @inheritDoc
      */
-    public function getReasonPhrase()
+    public function withStatus($code, $reasonPhrase = ''): Response
     {
+        $this->statusCode = $code;
+        $this->reasonPhrase = $reasonPhrase;
+        return $this;
     }
 }

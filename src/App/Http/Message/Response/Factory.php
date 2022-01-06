@@ -20,6 +20,8 @@ class Factory implements ResponseFactoryInterface
      */
     public function createResponse(int $code = 200, string $reasonPhrase = ''): ResponseInterface
     {
-        return $this->objectManager->create(ResponseInterface::class);
+        /** @var ResponseInterface $response */
+        $response = $this->objectManager->create(ResponseInterface::class);
+        return $response->withStatus($code, $reasonPhrase);
     }
 }
