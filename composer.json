@@ -19,6 +19,7 @@
     ],
     "require": {
         "laminas/laminas-code": "*",
+        "laminas/laminas-db": "*",
         "symfony/console": "*",
         "psr/log": "*",
         "psr/http-message": "*",

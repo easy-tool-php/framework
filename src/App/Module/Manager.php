@@ -16,6 +16,8 @@ class Manager
 {
     public const CACHE_NAME = 'modules';
     public const CACHE_MODULES = 'modules';
+    public const CACHE_EVENTS = 'events';
+    public const CACHE_DI = 'di';
 
     public const CONFIG_NAME = 'modules';
     public const CONFIG_FILE = 'config/module.php';
@@ -27,6 +29,8 @@ class Manager
     public const MODULE_DIR = 'directory';
     public const MODULE_DEPENDS = 'depends';
     public const MODULE_ROUTE = 'route';
+    public const MODULE_DI = 'di';
+    public const MODULE_EVENTS = 'events';
 
     private CacheManager $cacheManager;
     private ConfigManager $configManager;
@@ -36,6 +40,8 @@ class Manager
     private Validator $validator;
 
     private array $moduleStatus = [];
+    private array $eventListeners = [];
+    private array $classAliases = [];
 
     private array $modules = [
         self::ENABLED => [],
@@ -65,8 +71,11 @@ class Manager
     {
         $cache = $this->cacheManager->getCache(self::CACHE_NAME);
         if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
-            //$this->modules = $cachedModules;
-            //return;
+            $this->modules = $cachedModules;
+            $this->classAliases = $cache->get(self::CACHE_DI);
+            $this->eventListeners = $cache->get(self::CACHE_EVENTS);
+            $this->prepareForApp();
+            return;
         }
 
         $config = $this->configManager->getConfig(self::CONFIG_NAME);
@@ -95,9 +104,24 @@ class Manager
         foreach ($this->modules[self::ENABLED] as $module) {
             $this->initModule($module);
         }
+        $this->prepareForApp();
 
         $cache->set(self::CACHE_MODULES, $this->modules);
+        $cache->set(self::CACHE_DI, $this->classAliases);
+        $cache->set(self::CACHE_EVENTS, $this->eventListeners);
+
         $config->setData($this->moduleStatus)->save();
+    }
+
+    /**
+     * Prepare for running the application after collecting module config
+     */
+    private function prepareForApp()
+    {
+        foreach ($this->eventListeners as $name => $listener) {
+            $this->eventManager->addListener($name, $listener);
+        }
+        $this->objectManager->collectClassAliases($this->classAliases);
     }
 
     /**
@@ -155,7 +179,9 @@ class Manager
                 [
                     self::MODULE_NAME => ['required'],
                     self::MODULE_DEPENDS => ['array'],
-                    self::MODULE_ROUTE => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
+                    self::MODULE_ROUTE => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]],
+                    self::MODULE_DI => ['array'],
+                    self::MODULE_EVENTS => ['array']
                 ],
                 $config
             ))
@@ -183,7 +209,13 @@ class Manager
      */
     private function initModule(array $config): void
     {
-        //$this->eventManager->addEvent();
-        //$this->objectManager->collectClassAliases();
+    }
+
+    /**
+     * Get all enabled modules
+     */
+    public function getEnabledModules(): array
+    {
+        return $this->modules[self::ENABLED];
     }
 }

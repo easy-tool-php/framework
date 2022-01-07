@@ -15,7 +15,7 @@ class Request extends HttpRequest implements ServerRequestInterface
     protected array $serverParams;
     protected array $uploadedFiles;
 
-    protected $parsedBody;
+    protected $parsedBody = null;
 
     public function __construct(
         StreamFactoryInterface $streamFactory,
@@ -28,26 +28,33 @@ class Request extends HttpRequest implements ServerRequestInterface
         $this->queryParams = $_GET;
         $this->serverParams = array_change_key_case($_SERVER);
 
+        $this->processServerParams();
+        $this->processHeaders();
+        $this->processBody();
+    }
+
+    /**
+     * Parse server parameters
+     */
+    private function processServerParams(): void
+    {
         $this->withProtocolVersion(
             substr(
                 $this->serverParams['server_protocol'],
                 strpos($this->serverParams['server_protocol'], '/') + 1
             )
         );
-        $this->withMethod($this->serverParams['request_method']);
-        $this->withBody($streamFactory->createStreamFromResource(fopen('php://input', 'r')));
+        $this->withMethod(strtoupper($this->serverParams['request_method']));
+        $this->withBody($this->streamFactory->createStreamFromResource(fopen('php://input', 'r')));
         $this->getUri()->fromString(
             $this->serverParams['request_scheme'] . '://'
             . $this->serverParams['http_host']
             . $this->serverParams['request_uri']
         );
-
-        $this->processHeaders();
-        $this->processBody();
     }
 
     /**
-     * Parse server parameters and assign headers
+     * Collect HTTP headers
      */
     private function processHeaders(): void
     {
@@ -60,10 +67,24 @@ class Request extends HttpRequest implements ServerRequestInterface
         }
     }
 
+    /**
+     * Parse request body base on header data
+     */
     private function processBody(): void
     {
-        //$this->parsedBody = file_get_contents('php://input');
-        if (in_array('application/json', $this->getHeader('accept'))) {
+        if ($this->getMethod() == self::METHOD_GET) {
+            return;
+        }
+
+        switch ($this->getHeaderLine('content_type')) {
+            case 'application/x-www-form-urlencoded':
+            case 'multipart/form-data':
+                $this->parsedBody = $_POST;
+                break;
+
+            case 'application/json':
+                $this->parsedBody = json_decode($this->body, true);
+                break;
         }
     }
 

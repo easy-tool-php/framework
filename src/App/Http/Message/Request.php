@@ -3,6 +3,7 @@
 namespace EasyTool\Framework\App\Http\Message;
 
 use EasyTool\Framework\App\Http\Message;
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
@@ -57,6 +58,9 @@ class Request extends Message implements RequestInterface
      */
     public function withMethod($method)
     {
+        if (!in_array($method, [self::METHOD_GET, self::METHOD_POST, self::METHOD_PUT, self::METHOD_DELETE])) {
+            throw new InvalidArgumentException('Invalid request method.');
+        }
         $this->method = $method;
         return $this;
     }

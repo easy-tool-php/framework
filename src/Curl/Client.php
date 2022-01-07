@@ -27,9 +27,12 @@ class Client implements ClientInterface
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
-        $url = (string)$request;
+        $url = (string)$request->getUri();
         $headers = [];
-        $data = [];
+        foreach (array_keys($request->getHeaders()) as $name) {
+            $headers[] = $request->getHeaderLine($name);
+        }
+        $data = (string)$request->getBody();
 
         $opts = [
             CURLOPT_HEADER => 0,

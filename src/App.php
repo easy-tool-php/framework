@@ -7,10 +7,10 @@ use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\FileManager;
-use EasyTool\Framework\App\Http\Server\Request as HttpRequest;
-use EasyTool\Framework\App\Http\Server\Request\Handler as HttpRequestHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Symfony\Component\Console\Application as ConsoleApplication;
 
 class App
@@ -73,22 +73,22 @@ class App
         }
     }
 
-    public function handleCommand()
+    public function handleCommand(): void
     {
         /** @var ConsoleApplication $consoleApplication */
-        $consoleApplication = $this->objectManager->create(
+        $consoleApplication = $this->objectManager->get(
             ConsoleApplication::class,
             ['name' => 'EasyTool', 'version' => $this->getVersion()]
         );
         $consoleApplication->run();
     }
 
-    public function handleHttp()
+    public function handleHttp(): void
     {
-        /** @var HttpRequest $httpRequest */
-        /** @var HttpRequestHandler $httpRequestHandler */
-        $httpRequest = $this->objectManager->create(HttpRequest::class);
-        $httpRequestHandler = $this->objectManager->get(HttpRequestHandler::class);
+        /** @var ServerRequestInterface $httpRequest */
+        /** @var RequestHandlerInterface $httpRequestHandler */
+        $httpRequest = $this->objectManager->get(ServerRequestInterface::class);
+        $httpRequestHandler = $this->objectManager->get(RequestHandlerInterface::class);
         $httpRequestHandler->handle($httpRequest);
     }
 }
