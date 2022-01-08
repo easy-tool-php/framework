@@ -2,7 +2,6 @@
 
 namespace EasyTool\Framework\App;
 
-use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Exception\ClassException;
 use ReflectionClass;
 use ReflectionException;
@@ -40,9 +39,9 @@ class ObjectManager
      */
     public function initialize(): void
     {
-        /** @var ConfigManager $configManager */
-        $configManager = $this->get(ConfigManager::class);
-        $classAliases = $configManager->getConfig(self::CONFIG_NAME)->getData();
+        /** @var Config $config */
+        $config = $this->get(Config::class);
+        $classAliases = $config->get(null, self::CONFIG_NAME);
         $this->collectClassAliases($classAliases);
     }
 

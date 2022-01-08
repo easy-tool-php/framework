@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\App\Event;
 
-use EasyTool\Framework\App\Config\Manager as ConfigManager;
+use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\ObjectManager;
 use Exception;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -13,7 +13,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
 {
     public const CONFIG_NAME = 'events';
 
-    private ConfigManager $configManager;
+    private Config $config;
     private ObjectManager $objectManager;
 
     /**
@@ -22,10 +22,10 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     private array $listeners = [];
 
     public function __construct(
-        ConfigManager $configManager,
+        Config $config,
         ObjectManager $objectManager
     ) {
-        $this->configManager = $configManager;
+        $this->config = $config;
         $this->objectManager = $objectManager;
     }
 
@@ -34,7 +34,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
      */
     public function initialize(): void
     {
-        $listeners = $this->configManager->getConfig(self::CONFIG_NAME)->getData();
+        $listeners = $this->config->get(null, self::CONFIG_NAME);
         foreach ($listeners as $name => $listener) {
             $this->addListener($name, $listener);
         }

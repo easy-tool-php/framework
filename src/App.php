@@ -3,7 +3,6 @@
 namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
-use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
@@ -16,7 +15,6 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 
 class App
 {
-    private CacheManager $cacheManager;
     private ConfigManager $configManager;
     private DatabaseManager $databaseManager;
     private EventManager $eventManager;
@@ -28,7 +26,6 @@ class App
     private string $directoryRoot;
 
     public function __construct(
-        CacheManager $cacheManager,
         ConfigManager $configManager,
         DatabaseManager $databaseManager,
         EventManager $eventManager,
@@ -38,7 +35,6 @@ class App
         ClassLoader $classLoader,
         string $directoryRoot
     ) {
-        $this->cacheManager = $cacheManager;
         $this->classLoader = $classLoader;
         $this->configManager = $configManager;
         $this->databaseManager = $databaseManager;
@@ -60,7 +56,6 @@ class App
         $this->fileManager->initialize($this->directoryRoot);
         $this->objectManager->initialize();
         $this->eventManager->initialize();
-        $this->cacheManager->initialize();
         $this->databaseManager->initialize();
         $this->moduleManager->initialize($this->classLoader);
     }

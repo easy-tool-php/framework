@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\App\Database;
 
-use EasyTool\Framework\App\Config\Manager as ConfigManager;
+use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Exception\DatabaseException;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Validation\Validator;
@@ -10,7 +10,8 @@ use Laminas\Db\Adapter\Adapter;
 
 class Manager
 {
-    public const CONFIG_NAME = 'database';
+    public const CONFIG_NAME = 'env';
+    public const CONFIG_PATH = 'database';
 
     public const DB_DRIVER = 'driver';
     public const DB_HOST = 'host';
@@ -20,18 +21,18 @@ class Manager
 
     public const DRIVER_PDO_MYSQL = 'Pdo_Mysql';
 
-    private ConfigManager $configManager;
+    private Config $config;
     private ObjectManager $objectManager;
     private Validator $validator;
 
     private array $adapters = [];
 
     public function __construct(
-        ConfigManager $configManager,
+        Config $config,
         ObjectManager $objectManager,
         Validator $validator
     ) {
-        $this->configManager = $configManager;
+        $this->config = $config;
         $this->objectManager = $objectManager;
         $this->validator = $validator;
     }
@@ -41,7 +42,7 @@ class Manager
      */
     public function initialize()
     {
-        $adapterConfigs = $this->configManager->getConfig(self::CONFIG_NAME)->getData();
+        $adapterConfigs = $this->config->get(self::CONFIG_PATH, self::CONFIG_NAME);
 
         foreach ($adapterConfigs as $name => $config) {
             if (!$this->validator->validate(

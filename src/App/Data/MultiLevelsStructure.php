@@ -1,23 +1,13 @@
 <?php
 
-namespace EasyTool\Framework\App\Config;
+namespace EasyTool\Framework\App\Data;
 
-use Exception;
-
-class Config
+trait MultiLevelsStructure
 {
-    public function get($path, $namespace = '')
-    {
-        return $this->getChild(explode('/', $path), $this->data);
-    }
-
-    public function set($path, $value): self
-    {
-        $this->setChild(explode('/', $path), $this->data, $value);
-        return $this;
-    }
-
-    private function getChild(array $path, &$data, $currentPath = '')
+    /**
+     * Get child by specified path of given data
+     */
+    private function getChildByPath(array $path, array &$data, string $currentPath = '')
     {
         $tmp = $path;
         $section = array_shift($tmp);
@@ -30,7 +20,10 @@ class Config
             : $data[$section];
     }
 
-    private function setChild(array $path, array &$data, $value, $currentPath = ''): self
+    /**
+     * Set child by specified path of given data
+     */
+    private function setChildByPath(array $path, array &$data, $value, string $currentPath = ''): self
     {
         $tmp = $path;
         $section = array_shift($tmp);

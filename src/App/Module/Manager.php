@@ -5,7 +5,7 @@ namespace EasyTool\Framework\App\Module;
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
-use EasyTool\Framework\App\Config\Manager as ConfigManager;
+use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
 use EasyTool\Framework\App\FileManager;
@@ -33,7 +33,7 @@ class Manager
     public const MODULE_EVENTS = 'events';
 
     private CacheManager $cacheManager;
-    private ConfigManager $configManager;
+    private Config $config;
     private EventManager $eventManager;
     private FileManager $fileManager;
     private ObjectManager $objectManager;
@@ -50,14 +50,14 @@ class Manager
 
     public function __construct(
         CacheManager $cacheManager,
-        ConfigManager $configManager,
+        Config $config,
         EventManager $eventManager,
         FileManager $fileManager,
         ObjectManager $objectManager,
         Validator $validator
     ) {
         $this->cacheManager = $cacheManager;
-        $this->configManager = $configManager;
+        $this->config = $config;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
         $this->objectManager = $objectManager;
@@ -78,8 +78,7 @@ class Manager
             return;
         }
 
-        $config = $this->configManager->getConfig(self::CONFIG_NAME);
-        $this->moduleStatus = $config->getData();
+        $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
 
         /**
          * Assign the sub-folders under `app/modules` as PSR-4 directory,
@@ -109,8 +108,6 @@ class Manager
         $cache->set(self::CACHE_MODULES, $this->modules);
         $cache->set(self::CACHE_DI, $this->classAliases);
         $cache->set(self::CACHE_EVENTS, $this->eventListeners);
-
-        $config->setData($this->moduleStatus)->save();
     }
 
     /**
