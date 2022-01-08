@@ -39,7 +39,7 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
-    public function withRequestTarget($requestTarget): Request
+    public function withRequestTarget($requestTarget): self
     {
         $this->requestTarget = $requestTarget;
         return $this;

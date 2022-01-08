@@ -26,7 +26,7 @@ class DataObject
      *
      * @param mixed $value
      */
-    public function set(string $key, $value): DataObject
+    public function set(string $key, $value): self
     {
         $this->data[$key] = $value;
         return $this;
@@ -47,7 +47,7 @@ class DataObject
      *
      * @param array $data Data array, format is like ['key_a' => $valueA, 'key_b' => $valueB, ...]
      */
-    public function setData(array $data): DataObject
+    public function setData(array $data): self
     {
         $this->data = $data;
         return $this;
@@ -58,7 +58,7 @@ class DataObject
      *
      * @param array $data Data array, format is like ['key_a' => $valueA, 'key_b' => $valueB, ...]
      */
-    public function addData(array $data): DataObject
+    public function addData(array $data): self
     {
         $this->data = array_merge($this->data, $data);
         return $this;

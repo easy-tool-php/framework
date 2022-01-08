@@ -107,7 +107,7 @@ class Request extends HttpRequest implements ServerRequestInterface
     /**
      * @inheritDoc
      */
-    public function withCookieParams(array $cookies): Request
+    public function withCookieParams(array $cookies): self
     {
         $this->cookieParams = $cookies;
         return $this;

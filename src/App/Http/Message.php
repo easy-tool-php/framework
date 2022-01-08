@@ -32,7 +32,7 @@ class Message implements MessageInterface
     /**
      * @inheritDoc
      */
-    public function withProtocolVersion($version): Message
+    public function withProtocolVersion($version): self
     {
         $this->protocolVersion = $version;
         return $this;
@@ -73,7 +73,7 @@ class Message implements MessageInterface
     /**
      * @inheritDoc
      */
-    public function withHeader($name, $value): Message
+    public function withHeader($name, $value): self
     {
         if (!is_array($value)) {
             $value = [$value];
@@ -85,7 +85,7 @@ class Message implements MessageInterface
     /**
      * @inheritDoc
      */
-    public function withAddedHeader($name, $value): Message
+    public function withAddedHeader($name, $value): self
     {
         if (!is_array($value)) {
             $value = [$value];
@@ -101,7 +101,7 @@ class Message implements MessageInterface
     /**
      * @inheritDoc
      */
-    public function withoutHeader($name): Message
+    public function withoutHeader($name): self
     {
         unset($this->headers[strtolower($name)]);
         return $this;
@@ -121,7 +121,7 @@ class Message implements MessageInterface
     /**
      * @inheritDoc
      */
-    public function withBody(StreamInterface $body): Message
+    public function withBody(StreamInterface $body): self
     {
         $this->body = $body;
         return $this;

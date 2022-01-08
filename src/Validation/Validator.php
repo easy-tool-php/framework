@@ -99,6 +99,7 @@ class Validator
             case 'array':
             case 'int':
             case 'numeric':
+            case 'string':
                 $validateClass = static::class . '\\IsTypeOf';
                 $parameters = [$validateName];
                 break;

@@ -14,10 +14,14 @@ class Options extends AbstractValidator
         }
 
         foreach ($values as $value) {
-            foreach (array_keys($value) as $option) {
-                if (!in_array($option, $params)) {
-                    return false;
+            if (is_array($value)) {
+                foreach (array_keys($value) as $option) {
+                    if (!in_array($option, $params)) {
+                        return false;
+                    }
                 }
+            } elseif (!in_array($value, $params)) {
+                return false;
             }
         }
         return true;

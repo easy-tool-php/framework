@@ -97,7 +97,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withScheme($scheme): Uri
+    public function withScheme($scheme): self
     {
         $this->scheme = $scheme;
         return $this;
@@ -106,7 +106,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withUserInfo($user, $password = null): Uri
+    public function withUserInfo($user, $password = null): self
     {
         $this->username = $user;
         $this->password = $password;
@@ -116,13 +116,13 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withHost($host): Uri
+    public function withHost($host): self
     {
         $this->host = $host;
         return $this;
     }
 
-    public function withPort($port): Uri
+    public function withPort($port): self
     {
         $this->port = $port;
         return $this;
@@ -131,7 +131,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withPath($path): Uri
+    public function withPath($path): self
     {
         $this->path = $path;
         return $this;
@@ -140,7 +140,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withQuery($query): Uri
+    public function withQuery($query): self
     {
         $this->query = $query;
         return $this;
@@ -149,7 +149,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withFragment($fragment): Uri
+    public function withFragment($fragment): self
     {
         $this->fragment = $fragment;
         return $this;

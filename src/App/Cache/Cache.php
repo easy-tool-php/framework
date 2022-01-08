@@ -117,7 +117,7 @@ class Cache implements CacheInterface
     /**
      * Save data
      */
-    public function save(): Cache
+    public function save(): self
     {
         $this->adapter->save($this->name, $this->data);
         return $this;

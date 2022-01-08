@@ -22,5 +22,5 @@ abstract class AbstractConfig extends DataObject
     /**
      * Store data of the configuration
      */
-    abstract public function save(): AbstractConfig;
+    abstract public function save(): self;
 }

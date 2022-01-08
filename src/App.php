@@ -5,6 +5,7 @@ namespace EasyTool\Framework;
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config\Manager as ConfigManager;
+use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\FileManager;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
@@ -17,6 +18,7 @@ class App
 {
     private CacheManager $cacheManager;
     private ConfigManager $configManager;
+    private DatabaseManager $databaseManager;
     private EventManager $eventManager;
     private FileManager $fileManager;
     private ModuleManager $moduleManager;
@@ -28,6 +30,7 @@ class App
     public function __construct(
         CacheManager $cacheManager,
         ConfigManager $configManager,
+        DatabaseManager $databaseManager,
         EventManager $eventManager,
         FileManager $fileManager,
         ModuleManager $moduleManager,
@@ -38,6 +41,7 @@ class App
         $this->cacheManager = $cacheManager;
         $this->classLoader = $classLoader;
         $this->configManager = $configManager;
+        $this->databaseManager = $databaseManager;
         $this->directoryRoot = $directoryRoot;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
@@ -57,6 +61,7 @@ class App
         $this->objectManager->initialize();
         $this->eventManager->initialize();
         $this->cacheManager->initialize();
+        $this->databaseManager->initialize();
         $this->moduleManager->initialize($this->classLoader);
     }
 

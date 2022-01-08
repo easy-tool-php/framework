@@ -30,7 +30,7 @@ class AppConfig extends AbstractConfig
     /**
      * @inheritDoc
      */
-    public function save(): AppConfig
+    public function save(): self
     {
         $configFile = $this->fileManager->getDirectoryPath(FileManager::DIR_CONFIG) . '/' . $this->name . '.php';
         FileGenerator::fromArray(['filename' => $configFile])
