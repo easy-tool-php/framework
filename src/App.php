@@ -3,6 +3,7 @@
 namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
+use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\FileManager;
@@ -14,6 +15,7 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 
 class App
 {
+    private Area $area;
     private DatabaseManager $databaseManager;
     private EventManager $eventManager;
     private FileManager $fileManager;
@@ -24,6 +26,7 @@ class App
     private string $directoryRoot;
 
     public function __construct(
+        Area $area,
         DatabaseManager $databaseManager,
         EventManager $eventManager,
         FileManager $fileManager,
@@ -32,6 +35,7 @@ class App
         ClassLoader $classLoader,
         string $directoryRoot
     ) {
+        $this->area = $area;
         $this->classLoader = $classLoader;
         $this->databaseManager = $databaseManager;
         $this->directoryRoot = $directoryRoot;
@@ -45,6 +49,11 @@ class App
 
     private function initialize()
     {
+        /**
+         * Use UTC time as system time, for calculation and storage
+         */
+        ini_set('date.timezone', 'UTC');
+
         /**
          * Initializing of file manager MUST be executed at the first,
          *     otherwise the system will not be able to find the correct position of config files.
@@ -74,6 +83,8 @@ class App
      */
     public function handleCommand(): void
     {
+        $this->area->setCode(Area::CLI);
+
         /** @var ConsoleApplication $consoleApplication */
         $consoleApplication = $this->objectManager->get(
             ConsoleApplication::class,

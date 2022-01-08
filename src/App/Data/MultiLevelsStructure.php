@@ -16,7 +16,7 @@ trait MultiLevelsStructure
             throw new Exception(sprintf('Path `%s` does not exist.', $currentPath));
         }
         return isset($tmp[0])
-            ? $this->getChild($tmp, $data[$section], $currentPath)
+            ? $this->getChildByPath($tmp, $data[$section], $currentPath)
             : $data[$section];
     }
 
@@ -35,7 +35,7 @@ trait MultiLevelsStructure
             if (!is_array($data[$section])) {
                 throw new Exception(sprintf('Path `%s` does not have a child.', $currentPath));
             }
-            $this->getChild($tmp, $data[$section], $value, $currentPath);
+            $this->setChildByPath($tmp, $data[$section], $value, $currentPath);
         } else {
             $data[$section] = $value;
         }
