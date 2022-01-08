@@ -3,7 +3,6 @@
 namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
-use EasyTool\Framework\App\Config\Manager as ConfigManager;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\FileManager;
@@ -15,7 +14,6 @@ use Symfony\Component\Console\Application as ConsoleApplication;
 
 class App
 {
-    private ConfigManager $configManager;
     private DatabaseManager $databaseManager;
     private EventManager $eventManager;
     private FileManager $fileManager;
@@ -26,7 +24,6 @@ class App
     private string $directoryRoot;
 
     public function __construct(
-        ConfigManager $configManager,
         DatabaseManager $databaseManager,
         EventManager $eventManager,
         FileManager $fileManager,
@@ -36,7 +33,6 @@ class App
         string $directoryRoot
     ) {
         $this->classLoader = $classLoader;
-        $this->configManager = $configManager;
         $this->databaseManager = $databaseManager;
         $this->directoryRoot = $directoryRoot;
         $this->eventManager = $eventManager;
@@ -73,6 +69,9 @@ class App
         }
     }
 
+    /**
+     * Handle console command
+     */
     public function handleCommand(): void
     {
         /** @var ConsoleApplication $consoleApplication */
@@ -83,6 +82,12 @@ class App
         $consoleApplication->run();
     }
 
+    /**
+     * Handle HTTP request
+     *
+     * To get singletons from the inner method instead of dependency injection,
+     *     because we didn't have all necessary things at the beginning.
+     */
     public function handleHttp(): void
     {
         /** @var ServerRequestInterface $httpRequest */

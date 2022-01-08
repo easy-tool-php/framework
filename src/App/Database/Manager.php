@@ -45,16 +45,18 @@ class Manager
         $adapterConfigs = $this->config->get(self::CONFIG_PATH, self::CONFIG_NAME);
 
         foreach ($adapterConfigs as $name => $config) {
-            if (!$this->validator->validate(
-                [
-                    self::DB_DRIVER => ['required', 'string', 'options' => [self::DRIVER_PDO_MYSQL]],
-                    self::DB_HOST => ['required', 'string'],
-                    self::DB_DATABASE => ['required', 'string'],
-                    self::DB_USERNAME => ['required', 'string'],
-                    self::DB_PASSWORD => ['required', 'string']
-                ],
-                $config
-            )) {
+            if (
+                !$this->validator->validate(
+                    [
+                        self::DB_DRIVER => ['required', 'string', 'options' => [self::DRIVER_PDO_MYSQL]],
+                        self::DB_HOST => ['required', 'string'],
+                        self::DB_DATABASE => ['required', 'string'],
+                        self::DB_USERNAME => ['required', 'string'],
+                        self::DB_PASSWORD => ['required', 'string']
+                    ],
+                    $config
+                )
+            ) {
                 throw new DatabaseException('Invalid database config.');
             }
 
