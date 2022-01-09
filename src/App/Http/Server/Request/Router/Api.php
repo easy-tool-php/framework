@@ -6,20 +6,19 @@ use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Config;
 use Psr\Http\Message\ServerRequestInterface;
 
-class Api implements RouterInterface
+class Api extends AbstractRouter
 {
     public const CONFIG_NAME = 'env';
     public const CONFIG_PATH = 'api/route';
 
-    private Area $area;
     private Config $config;
 
     public function __construct(
-        Area $area,
-        Config $config
+        Config $config,
+        Context $context
     ) {
-        $this->area = $area;
         $this->config = $config;
+        parent::__construct($context);
     }
 
     /**
@@ -31,7 +30,11 @@ class Api implements RouterInterface
         if ($route != $this->config->get(self::CONFIG_PATH, self::CONFIG_NAME)) {
             return false;
         }
-        [$routeName, $controllerName, $actionName] = array_pad(explode('/', $path), 3, 'index');
+
+        $routes = $this->moduleManager->getApiRoutes();
+        foreach (array_keys($routes) as $route) {
+
+        }
 
         $this->area->setCode(Area::API);
     }

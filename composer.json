@@ -27,6 +27,7 @@
         "psr/link": "*",
         "psr/event-dispatcher": "*",
         "psr/http-server-handler": "*",
+        "psr/http-server-middleware": "*",
         "psr/simple-cache": "*",
         "psr/http-factory": "*",
         "psr/http-client": "*"

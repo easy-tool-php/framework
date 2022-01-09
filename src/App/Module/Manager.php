@@ -16,16 +16,21 @@ class Manager
 {
     public const CACHE_NAME = 'modules';
     public const CACHE_MODULES = 'modules';
-    public const CACHE_EVENTS = 'events';
+    public const CACHE_API = 'api';
     public const CACHE_DI = 'di';
+    public const CACHE_EVENTS = 'events';
 
     public const CONFIG_NAME = 'modules';
     public const CONFIG_FILE = 'config/module.php';
+    public const CONFIG_TYPE_API = 'api';
+    public const CONFIG_TYPE_DI = 'di';
+    public const CONFIG_TYPE_EVENTS = 'events';
 
     public const ENABLED = 'enabled';
     public const DISABLED = 'disabled';
 
     public const MODULE_NAME = 'name';
+    public const MODULE_NAMESPACE = 'namespace';
     public const MODULE_DIR = 'directory';
     public const MODULE_DEPENDS = 'depends';
     public const MODULE_ROUTE = 'route';
@@ -40,6 +45,7 @@ class Manager
     private Validator $validator;
 
     private array $moduleStatus = [];
+    private array $apiRoutes = [];
     private array $eventListeners = [];
     private array $classAliases = [];
 
@@ -72,6 +78,7 @@ class Manager
         $cache = $this->cacheManager->getCache(self::CACHE_NAME);
         if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
             $this->modules = $cachedModules;
+            $this->apiRoutes = $cache->get(self::CACHE_API);
             $this->classAliases = $cache->get(self::CACHE_DI);
             $this->eventListeners = $cache->get(self::CACHE_EVENTS);
             $this->prepareForApp();
@@ -89,10 +96,10 @@ class Manager
             $classLoader->addPsr4('App\\' . $moduleDir . '\\', $dir . '/' . $moduleDir);
         }
 
-        foreach ($classLoader->getPrefixesPsr4() as $directoryGroup) {
+        foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
             foreach ($directoryGroup as $directory) {
                 if (($moduleConfig = $this->checkModuleConfig($directory))) {
-                    $this->collectModule($moduleConfig, $directory);
+                    $this->collectModule($moduleConfig, $namespace, $directory);
                 }
             }
         }
@@ -106,6 +113,7 @@ class Manager
         $this->prepareForApp();
 
         $cache->set(self::CACHE_MODULES, $this->modules);
+        $cache->set(self::CACHE_API, $this->apiRoutes);
         $cache->set(self::CACHE_DI, $this->classAliases);
         $cache->set(self::CACHE_EVENTS, $this->eventListeners);
     }
@@ -188,9 +196,10 @@ class Manager
     /**
      * Collect module
      */
-    private function collectModule(array $config, $directory): void
+    private function collectModule(array $config, $namespace, $directory): void
     {
         $config[self::MODULE_DIR] = $directory;
+        $config[self::MODULE_NAMESPACE] = $namespace;
         if (!isset($this->moduleStatus[$config[self::MODULE_NAME]])) {
             $this->moduleStatus[$config[self::MODULE_NAME]] = true;
         }
@@ -202,10 +211,44 @@ class Manager
     }
 
     /**
+     * Get config data of specified type
+     */
+    private function getConfig(array $moduleConfig, string $type): array
+    {
+        if (
+            is_file(($configFile = $moduleConfig[self::MODULE_DIR] . '/config/' . $type . '.php'))
+            && is_array(($config = require $configFile))
+        ) {
+            return $config;
+        }
+        return [];
+    }
+
+    /**
      * Initialize each module
      */
-    private function initModule(array $config): void
+    private function initModule(array $moduleConfig): void
     {
+        $this->apiRoutes = array_merge(
+            $this->apiRoutes,
+            $this->getConfig($moduleConfig, self::CONFIG_TYPE_API)
+        );
+        $this->classAliases = array_merge(
+            $this->classAliases,
+            $this->getConfig($moduleConfig, self::CONFIG_TYPE_DI)
+        );
+        $this->eventListeners = array_merge(
+            $this->eventListeners,
+            $this->getConfig($moduleConfig, self::CONFIG_TYPE_EVENTS)
+        );
+    }
+
+    /**
+     * Get all API routes
+     */
+    public function getApiRoutes(): array
+    {
+        return $this->apiRoutes;
     }
 
     /**
