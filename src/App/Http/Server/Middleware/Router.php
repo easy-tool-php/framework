@@ -16,7 +16,7 @@ use ReflectionClass;
 
 class Router implements MiddlewareInterface
 {
-    public const MATCHED = 'matched';
+    public const ACTION = 'action';
 
     public const CONFIG_NAME = 'env';
     public const CONFIG_API_PATH = 'api/route';
@@ -73,6 +73,9 @@ class Router implements MiddlewareInterface
             ? $this->objectManager->create($class) : null;
     }
 
+    /**
+     * Check whether the request path matches an API route
+     */
     private function matchApi(ServerRequestInterface $request): bool
     {
         [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
@@ -81,12 +84,24 @@ class Router implements MiddlewareInterface
         }
 
         $routes = $this->moduleManager->getApiRoutes();
-        foreach (array_keys($routes) as $route) {
-            [$method, $path] = explode(':', $route);
+        foreach ($routes as $route => $action) {
+            [$method, $apiPath] = explode(':', $route, 2);
+            $regex = preg_replace('/:\w+/', '\\w+', str_replace('/', '\/', $apiPath));
+            if ($method == $request->getMethod() && preg_match('/^' . $regex . '$/', $path)) {
+                $this->area->setCode(Area::API);
+                $request->withAttribute(
+                    self::ACTION,
+                    [$this->objectManager->create($action['class']), $action['method']]
+                );
+                return true;
+            }
         }
-        return true;
+        return false;
     }
 
+    /**
+     * Check whether the request path has a matched backend controller
+     */
     private function matchBackend(ServerRequestInterface $request): bool
     {
         [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
@@ -97,11 +112,14 @@ class Router implements MiddlewareInterface
         [$routeName, $controllerName, $actionName] = array_pad(explode('/', $path), 3, 'index');
         if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
             $this->area->setCode(Area::BACKEND);
-            $request->withAttribute(self::MATCHED, true);
+            $request->withAttribute(self::ACTION, [$action, 'execute']);
         }
         return true;
     }
 
+    /**
+     * Check whether the request path has a matched frontend controller
+     */
     private function matchFrontend(ServerRequestInterface $request): bool
     {
         [$routeName, $controllerName, $actionName] = array_pad(
@@ -111,14 +129,14 @@ class Router implements MiddlewareInterface
         );
         if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
             $this->area->setCode(Area::FRONTEND);
-            $request->withAttribute(self::MATCHED, true);
+            $request->withAttribute(self::ACTION, [$action, 'execute']);
         }
         return true;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if (!$request->getAttribute(self::MATCHED)) {
+        if (!$request->getAttribute(self::ACTION)) {
             $this->matchApi($request)
             || $this->matchBackend($request)
             || $this->matchFrontend($request);
