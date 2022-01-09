@@ -2,12 +2,8 @@
 
 namespace EasyTool\Framework\App\Http\Server\Request;
 
-use EasyTool\Framework\App\Area;
-use EasyTool\Framework\App\Data\DataObject;
-use EasyTool\Framework\App\Event\Manager as EventManager;
-use EasyTool\Framework\App\Http\Server\Request\Router\Api as ApiRouter;
-use EasyTool\Framework\App\Http\Server\Request\Router\Backend as BackendRouter;
-use EasyTool\Framework\App\Http\Server\Request\Router\Frontend as FrontendRouter;
+use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -15,27 +11,22 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class Handler implements RequestHandlerInterface
 {
-    private Area $area;
-    private ApiRouter $apiRouter;
-    private BackendRouter $backendRouter;
-    private FrontendRouter $frontendRouter;
-    private EventManager $eventManager;
+    public const CONFIG_MIDDLEWARES = 'middlewares';
+
+    private ObjectManager $objectManager;
     private ResponseFactoryInterface $responseFactory;
 
+    private array $middlewares;
+
     public function __construct(
-        Area $area,
-        EventManager $eventManager,
-        ResponseFactoryInterface $responseFactory,
-        ApiRouter $apiRouter,
-        BackendRouter $backendRouter,
-        FrontendRouter $frontendRouter
+        Config $config,
+        ObjectManager $objectManager,
+        ResponseFactoryInterface $responseFactory
     ) {
-        $this->area = $area;
-        $this->apiRouter = $apiRouter;
-        $this->backendRouter = $backendRouter;
-        $this->frontendRouter = $frontendRouter;
-        $this->eventManager = $eventManager;
+        $this->objectManager = $objectManager;
         $this->responseFactory = $responseFactory;
+
+        $this->middlewares = $config->get(null, self::CONFIG_MIDDLEWARES);
     }
 
     /**
@@ -43,13 +34,11 @@ class Handler implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $this->eventManager->dispatch(new DataObject(['name' => 'before_route', 'request' => $request]));
+        if (empty($this->middlewares)) {
+            return $this->responseFactory->createResponse();
+        }
 
-        $request->getAttribute('matched')
-        || $this->apiRouter->match($request)
-        || $this->backendRouter->match($request)
-        || $this->frontendRouter->match($request);
-
-        return $this->responseFactory->createResponse();
+        $middleware = $this->objectManager->create(array_shift($this->middlewares));
+        return $middleware->process($request, $this);
     }
 }

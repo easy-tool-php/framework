@@ -47,7 +47,7 @@ class App
         $this->initialize();
     }
 
-    private function initialize()
+    private function initialize(): void
     {
         /**
          * Use UTC time as system time, for calculation and storage
@@ -68,7 +68,7 @@ class App
     /**
      * Return current version of the framework
      */
-    public function getVersion()
+    public function getVersion(): ?string
     {
         $composerConfig = json_decode($this->fileManager->getFileContents('composer.lock'), true);
         foreach ($composerConfig['packages'] as $package) {
@@ -76,6 +76,7 @@ class App
                 return $package['extra']['branch-alias'][$package['version']] ?? $package['version'];
             }
         }
+        return null;
     }
 
     /**
