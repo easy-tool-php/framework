@@ -4,7 +4,7 @@ namespace EasyTool\Framework\App\Module\Controller;
 
 use Psr\Http\Message\ServerRequestInterface;
 
-abstract class AbstractController
+abstract class AbstractController implements ControllerInterface
 {
     protected ServerRequestInterface $request;
 

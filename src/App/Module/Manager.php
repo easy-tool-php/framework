@@ -75,6 +75,19 @@ class Manager
      */
     public function initialize(ClassLoader $classLoader): void
     {
+        /**
+         * Assign the sub-folders under `app/modules` as PSR-4 directory,
+         *     so that system is able to autoload the local modules.
+         */
+        $dir = $this->fileManager->getDirectoryPath(FileManager::DIR_MODULES);
+        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
+            $classLoader->addPsr4('App\\' . $moduleDir . '\\', $dir . '/' . $moduleDir);
+        }
+
+        /**
+         * Collect all necessary data from cache in order to save memory and improve performance.
+         *     Skip this step if the cache is disabled or empty.
+         */
         $cache = $this->cacheManager->getCache(self::CACHE_NAME);
         if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
             $this->modules = $cachedModules;
@@ -85,17 +98,11 @@ class Manager
             return;
         }
 
-        $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
-
         /**
-         * Assign the sub-folders under `app/modules` as PSR-4 directory,
-         *     so that we can process them together with the ones got from composer.
+         * Developer is able to enable/disable a module through editing `app/config/modules.php`.
+         *     Modules which do not exist in the config file will be added after initializing.
          */
-        $dir = $this->fileManager->getDirectoryPath(FileManager::DIR_MODULES);
-        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
-            $classLoader->addPsr4('App\\' . $moduleDir . '\\', $dir . '/' . $moduleDir);
-        }
-
+        $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
         foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
             foreach ($directoryGroup as $directory) {
                 if (($moduleConfig = $this->checkModuleConfig($directory))) {
@@ -103,10 +110,8 @@ class Manager
                 }
             }
         }
-
         $this->checkDependency();
         usort($this->modules[self::ENABLED], [$this, 'sortModules']);
-
         foreach ($this->modules[self::ENABLED] as $module) {
             $this->initModule($module);
         }

@@ -14,7 +14,6 @@ class Request extends HttpRequest implements ServerRequestInterface
     protected array $queryParams;
     protected array $serverParams;
     protected array $uploadedFiles;
-
     protected $parsedBody = null;
 
     public function __construct(

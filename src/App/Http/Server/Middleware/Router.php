@@ -4,6 +4,7 @@ namespace EasyTool\Framework\App\Http\Server\Middleware;
 
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Module\Controller\ControllerInterface;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Code\VariableTransformer;
@@ -11,9 +12,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ReflectionClass;
 
 class Router implements MiddlewareInterface
 {
+    public const MATCHED = 'matched';
+
     public const CONFIG_NAME = 'env';
     public const CONFIG_API_PATH = 'api/route';
     public const CONFIG_BACKEND_PATH = 'backend/route';
@@ -62,43 +66,63 @@ class Router implements MiddlewareInterface
             . str_replace('/', '\\', $this->variableTransformer->snakeToHump($controllerName)) . '\\'
             . str_replace('/', '\\', $this->variableTransformer->snakeToHump($actionName));
 
-        return class_exists($class) ? $this->objectManager->create($class) : null;
+        $reflectionClass = new ReflectionClass('\\' . $class);
+        $reflectionClass->implementsInterface(ControllerInterface::class);
+
+        return $reflectionClass->implementsInterface(ControllerInterface::class)
+            ? $this->objectManager->create($class) : null;
     }
 
-    private function matchApi($path)
+    private function matchApi(ServerRequestInterface $request): bool
     {
+        [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
+        if ($route != $this->config->get(self::CONFIG_API_PATH, self::CONFIG_NAME)) {
+            return false;
+        }
+
         $routes = $this->moduleManager->getApiRoutes();
         foreach (array_keys($routes) as $route) {
             [$method, $path] = explode(':', $route);
         }
+        return true;
     }
 
-    private function matchBackend($path)
+    private function matchBackend(ServerRequestInterface $request): bool
     {
-        [$routeName, $controllerName, $actionName] = array_pad(explode('/', $path), 3, 'index');
-        if ($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName)) {
-            print_r($action);
+        [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
+        if ($route != $this->config->get(self::CONFIG_BACKEND_PATH, self::CONFIG_NAME)) {
+            return false;
         }
+
+        [$routeName, $controllerName, $actionName] = array_pad(explode('/', $path), 3, 'index');
+        if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
+            $this->area->setCode(Area::BACKEND);
+            $request->withAttribute(self::MATCHED, true);
+        }
+        return true;
     }
 
-    private function matchFrontend($request)
+    private function matchFrontend(ServerRequestInterface $request): bool
     {
         [$routeName, $controllerName, $actionName] = array_pad(
             explode('/', trim($request->getUri()->getPath(), '/')),
             3,
             'index'
         );
-        $this->getActionInstance(Area::FRONTEND, $routeName, $controllerName, $actionName);
+        if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
+            $this->area->setCode(Area::FRONTEND);
+            $request->withAttribute(self::MATCHED, true);
+        }
+        return true;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
-
-        ($route == $this->config->get(self::CONFIG_API_PATH, self::CONFIG_NAME) && $this->matchApi($path))
-        || ($route == $this->config->get(self::CONFIG_BACKEND_PATH, self::CONFIG_NAME) && $this->matchBackend($path))
-        || $this->matchFrontend($request);
-
+        if (!$request->getAttribute(self::MATCHED)) {
+            $this->matchApi($request)
+            || $this->matchBackend($request)
+            || $this->matchFrontend($request);
+        }
         return $handler->handle($request);
     }
 }
