@@ -7,6 +7,7 @@ use EasyTool\Framework\App\Http\Server\Response\Handler as ResponseHandler;
 use EasyTool\Framework\App\Logger;
 use Exception;
 use Psr\Http\Message\ResponseFactoryInterface;
+use ReflectionClass;
 
 class Handler
 {
@@ -36,12 +37,15 @@ class Handler
 <html>
     <head>
         <style>
-        body {color: #545454; font:14px/22px '';}
-        span.class {color: #B71C1C;}
-        span.type {color: #545454;}
-        span.function {color: #43A047;}
+        body {color: #545454; font:14px/22px ''; margin: 20px;}
+        div.message {margin-bottom: 10px; padding: 6px 12px;}
+        div.step {display: flex;}
+        span.index {display: block; flex: 0 0 20px; padding: 6px 12px;}
+        span.detail {display: block; flex: 0 1 auto; padding: 6px 12px;}
+        span.execution {color: #B71C1C; display: block;}
+        span.argument {color: #545454;}
+        span.position {display: block; font-size: 12px;}
         span.file {color: #F57F17;}
-        span.line {color: #43A047;}
         </style>
     </head>
     <body>
@@ -49,6 +53,34 @@ class Handler
     </body>
 </html>
 HTML;
+    }
+
+    private function formatArgsHtml($arguments, $method = null, $class = null): string
+    {
+        if (empty($arguments)) {
+            return '';
+        }
+
+        $params = [];
+        if ($class) {
+            $reflectionClass = new ReflectionClass($class);
+            foreach ($reflectionClass->getMethod($method)->getParameters() as $parameter) {
+                $params[] = $parameter->getName();
+            }
+        }
+
+        $argsHtml = [];
+        foreach ($arguments as $i => $argument) {
+            $title = is_object($argument)
+                ? ('[' . get_class($argument) . ']')
+                : (is_array($argument)
+                    ? '<Array>'
+                    : (is_string($argument) ? ('\'' . $argument . '\'') : $argument));
+            $argsHtml[] = '<span class="argument" title="' . html_entity_decode($title) . '">'
+                . (isset($params[$i]) ? ('$' . $params[$i]) : ('$argument' . $i))
+                . '</span>';
+        }
+        return ' <span class="arguments">' . implode(', ', $argsHtml) . '</span> ';
     }
 
     /**
@@ -83,23 +115,29 @@ HTML;
             default:
                 $steps = [];
                 foreach ($traces as $index => $step) {
-                    $steps[] = sprintf(
-                        '#%d %s%s%s%s',
-                        $totalSteps - $index,
-                        isset($step['class']) ? ('<span class="class">' . $step['class'] . '</span>') : '',
-                        $step['type'] ? ('<span class="type">' . $step['type'] . '</span>') : '',
-                        '<span class="function">' . $step['function'] . '</span>',
-                        isset($step['file']) ? sprintf(
-                            ' at <span class="file">%s</span> line <span class="line">%s</span>',
-                            $step['file'],
-                            $step['line']
-                        ) : ''
-                    );
+                    $steps[] = ''
+                        . '<span class="index">#' . ($totalSteps - $index) . '</span>'
+                        . '<span class="detail">'
+                        . '<span class="execution">'
+                        . (isset($step['class']) ? ('<span class="class">' . $step['class'] . '</span> :: ') : '')
+                        . '<span class="function">' . $step['function'] . '('
+                        . $this->formatArgsHtml($step['args'], $step['function'] ?? null, $step['class'] ?? null)
+                        . ')</span>'
+                        . '</span>'
+                        . (isset($step['file'])
+                            ? ('<span class="position">'
+                                . '<span class="file">' . $step['file'] . '</span>'
+                                . ' (<span class="line">' . $step['line'] . '</span>)'
+                                . '</span>')
+                            : '')
+                        . '</span>';
                 }
                 $body->write(
                     $this->wrapHtml(
-                        '<p>' . $exception->getMessage() . '</p>'
-                        . '<p>' . implode('<br/>', $steps) . '</p>'
+                        '<div class="message">' . $exception->getMessage() . '</div>'
+                        . '<div class="trace"><div class="step">'
+                        . implode('</div><div class="step">', $steps)
+                        . '</div></div>'
                     )
                 );
         }
