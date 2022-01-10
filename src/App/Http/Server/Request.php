@@ -9,6 +9,9 @@ use Psr\Http\Message\UriFactoryInterface;
 
 class Request extends HttpRequest implements ServerRequestInterface
 {
+    public const ACTION = 'action';
+    public const API_PARAMS = 'api_params';
+
     protected array $attributes;
     protected array $cookieParams;
     protected array $queryParams;

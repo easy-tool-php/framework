@@ -3,10 +3,12 @@
 namespace EasyTool\Framework\App\Http\Server\Request;
 
 use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Http\Server\Request;
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 class Handler implements RequestHandlerInterface
@@ -35,9 +37,13 @@ class Handler implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         if (empty($this->middlewares)) {
-            return $this->responseFactory->createResponse();
+            if (($action = $request->getAttribute(Request::ACTION))) {
+                return call_user_func($action);
+            }
+            return $this->responseFactory->createResponse(404);
         }
 
+        /** @var MiddlewareInterface $middleware */
         $middleware = $this->objectManager->create(array_shift($this->middlewares));
         return $middleware->process($request, $this);
     }

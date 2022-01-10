@@ -4,6 +4,7 @@ namespace EasyTool\Framework\App\Http\Server\Middleware;
 
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Http\Server\Request;
 use EasyTool\Framework\App\Module\Controller\ControllerInterface;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
@@ -16,8 +17,6 @@ use ReflectionClass;
 
 class Router implements MiddlewareInterface
 {
-    public const ACTION = 'action';
-
     public const CONFIG_NAME = 'env';
     public const CONFIG_API_PATH = 'api/route';
     public const CONFIG_BACKEND_PATH = 'backend/route';
@@ -74,25 +73,52 @@ class Router implements MiddlewareInterface
     }
 
     /**
+     * Check whether a given string matches variable part format
+     */
+    private function checkVariablePart($part)
+    {
+        return (strpos($part, ':') === 0) ? substr($part, 1) : false;
+    }
+
+    /**
      * Check whether the request path matches an API route
      */
     private function matchApi(ServerRequestInterface $request): bool
     {
-        [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
-        if ($route != $this->config->get(self::CONFIG_API_PATH, self::CONFIG_NAME)) {
+        [$prefix, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
+        if ($prefix != $this->config->get(self::CONFIG_API_PATH, self::CONFIG_NAME)) {
             return false;
         }
 
+        $arrPath = explode('/', trim($path, '/'));
         $routes = $this->moduleManager->getApiRoutes();
         foreach ($routes as $route => $action) {
             [$method, $apiPath] = explode(':', $route, 2);
-            $regex = preg_replace('/:\w+/', '\\w+', str_replace('/', '\/', $apiPath));
-            if ($method == $request->getMethod() && preg_match('/^' . $regex . '$/', $path)) {
+            if ($method != $request->getMethod()) {
+                continue;
+            }
+
+            $arrRoute = explode('/', trim($apiPath, '/'));
+            if (count($arrPath) != count($arrRoute)) {
+                continue;
+            }
+
+            $matched = true;
+            $variables = [];
+            foreach ($arrRoute as $i => $part) {
+                if (($variable = $this->checkVariablePart($part))) {
+                    $variables[$variable] = $arrPath[$i];
+                    continue;
+                }
+                if ($arrPath[$i] != $part) {
+                    $matched = false;
+                    break;
+                }
+            }
+            if ($matched) {
                 $this->area->setCode(Area::API);
-                $request->withAttribute(
-                    self::ACTION,
-                    [$this->objectManager->create($action['class']), $action['method']]
-                );
+                $request->withAttribute(Request::ACTION, [$this->objectManager->create($action), 'execute']);
+                $request->withAttribute(Request::API_PARAMS, $variables);
                 return true;
             }
         }
@@ -104,15 +130,15 @@ class Router implements MiddlewareInterface
      */
     private function matchBackend(ServerRequestInterface $request): bool
     {
-        [$route, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
-        if ($route != $this->config->get(self::CONFIG_BACKEND_PATH, self::CONFIG_NAME)) {
+        [$prefix, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
+        if ($prefix != $this->config->get(self::CONFIG_BACKEND_PATH, self::CONFIG_NAME)) {
             return false;
         }
 
         [$routeName, $controllerName, $actionName] = array_pad(explode('/', $path), 3, 'index');
         if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
             $this->area->setCode(Area::BACKEND);
-            $request->withAttribute(self::ACTION, [$action, 'execute']);
+            $request->withAttribute(Request::ACTION, [$action, 'execute']);
         }
         return true;
     }
@@ -129,14 +155,14 @@ class Router implements MiddlewareInterface
         );
         if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
             $this->area->setCode(Area::FRONTEND);
-            $request->withAttribute(self::ACTION, [$action, 'execute']);
+            $request->withAttribute(Request::ACTION, [$action, 'execute']);
         }
         return true;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if (!$request->getAttribute(self::ACTION)) {
+        if (!$request->getAttribute(Request::ACTION)) {
             $this->matchApi($request)
             || $this->matchBackend($request)
             || $this->matchFrontend($request);
