@@ -2,6 +2,9 @@
 
 namespace EasyTool\Framework\App;
 
+use EasyTool\Framework\Code\Generator\ArrayGenerator;
+use Laminas\Code\Generator\FileGenerator;
+
 class Config
 {
     use Data\MultiLevelsStructure;
@@ -9,19 +12,26 @@ class Config
     public const ENV = 'env';
     public const SYSTEM = 'system';
 
+    protected ArrayGenerator $arrayGenerator;
+    protected FileGenerator $fileGenerator;
     protected FileManager $fileManager;
+
     protected array $data = [self::SYSTEM => []];
 
     public function __construct(
+        ArrayGenerator $arrayGenerator,
+        FileGenerator $fileGenerator,
         FileManager $fileManager
     ) {
+        $this->arrayGenerator = $arrayGenerator;
+        $this->fileGenerator = $fileGenerator;
         $this->fileManager = $fileManager;
     }
 
     /**
      * Get config data of specified path and namespace
      */
-    public function get(?string $path, $namespace = self::SYSTEM)
+    public function get(?string $path, string $namespace = self::SYSTEM)
     {
         if (!isset($this->data[$namespace])) {
             $configFile = $this->fileManager->getDirectoryPath(FileManager::DIR_CONFIG) . '/' . $namespace . '.php';
@@ -43,10 +53,40 @@ class Config
     }
 
     /**
-     * Get config data by specified path of system namespace
+     * Set config data by specified path and namespace
      */
-    public function set($path, $value): self
+    public function set(?string $path, $value, string $namespace = self::SYSTEM): self
     {
-        return $this->setChildByPath(explode('/', $path), $this->data[self::SYSTEM], $value);
+        if ($path == null) {
+            $this->data[$namespace] = $value;
+            return $this;
+        }
+        return $this->setChildByPath(explode('/', $path), $this->data[$namespace], $value);
+    }
+
+    /**
+     * Store config data
+     */
+    public function save(string $namespace): self
+    {
+        if ($namespace == self::SYSTEM) {
+            return $this->saveSystemConfig();
+        }
+        $filename = $this->fileManager->getDirectoryPath(FileManager::DIR_CONFIG) . '/' . $namespace . '.php';
+        if (!is_dir(($dir = dirname($filename)))) {
+            mkdir($dir, 0755, true);
+        }
+        $this->fileGenerator->setFilename($filename)
+            ->setBody('return ' . $this->arrayGenerator->setArray($this->get(null, $namespace))->generate() . ";\n")
+            ->write();
+        return $this;
+    }
+
+    /**
+     * Store system config data
+     */
+    private function saveSystemConfig(): self
+    {
+        return $this;
     }
 }

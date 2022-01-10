@@ -121,6 +121,8 @@ class Manager
         $cache->set(self::CACHE_API, $this->apiRoutes);
         $cache->set(self::CACHE_DI, $this->classAliases);
         $cache->set(self::CACHE_EVENTS, $this->eventListeners);
+
+        $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
     }
 
     /**
