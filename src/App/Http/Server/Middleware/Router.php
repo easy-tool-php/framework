@@ -157,7 +157,7 @@ class Router implements MiddlewareInterface
             3,
             'index'
         );
-        if (($action = $this->getActionInstance(Area::BACKEND, $routeName, $controllerName, $actionName))) {
+        if (($action = $this->getActionInstance(Area::FRONTEND, $routeName, $controllerName, $actionName))) {
             $this->area->setCode(Area::FRONTEND);
             $request->withAttribute(Request::ACTION, [$action, 'execute']);
         }
