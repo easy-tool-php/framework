@@ -6,7 +6,9 @@ use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
+use EasyTool\Framework\App\Exception\Handler as ExceptionHandler;
 use EasyTool\Framework\App\FileManager;
+use EasyTool\Framework\App\Http\Server\Response\Handler as HttpResponseHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\ServerRequestInterface;
@@ -102,10 +104,14 @@ class App
      */
     public function handleHttp(): void
     {
+        //set_error_handler();
+        set_exception_handler([$this->objectManager->get(ExceptionHandler::class), 'handle']);
+
         /** @var ServerRequestInterface $httpRequest */
         /** @var RequestHandlerInterface $httpRequestHandler */
         $httpRequest = $this->objectManager->get(ServerRequestInterface::class);
         $httpRequestHandler = $this->objectManager->get(RequestHandlerInterface::class);
-        $httpRequestHandler->handle($httpRequest);
+        $httpResponseHandler = $this->objectManager->get(HttpResponseHandler::class);
+        $httpResponseHandler->handle($httpRequestHandler->handle($httpRequest));
     }
 }

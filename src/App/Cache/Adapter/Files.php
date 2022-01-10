@@ -6,6 +6,8 @@ use EasyTool\Framework\App\FileManager;
 
 class Files implements AdapterInterface
 {
+    public const CODE = 'files';
+
     private FileManager $fileManager;
 
     public function __construct(FileManager $fileManager)
@@ -31,5 +33,13 @@ class Files implements AdapterInterface
             mkdir($dir, 0644, true);
         }
         file_put_contents($dir . '/' . $cacheName, json_encode($data));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setConfig(array $config): self
+    {
+        return $this;
     }
 }

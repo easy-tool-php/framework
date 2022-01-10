@@ -35,7 +35,7 @@ class Logger extends AbstractLogger
         }
 
         if (!is_dir(($dir = $this->fileManager->getDirectoryPath(FileManager::DIR_LOG)))) {
-            mkdir($dir, 0644, true);
+            mkdir($dir, 0755, true);
         }
 
         $handle = fopen($dir . '/' . $file, 'a');

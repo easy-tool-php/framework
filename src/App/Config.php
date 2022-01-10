@@ -35,6 +35,14 @@ class Config
     }
 
     /**
+     * Get environment config
+     */
+    public function getEnv(?string $path)
+    {
+        return $this->get($path, self::ENV);
+    }
+
+    /**
      * Get config data by specified path of system namespace
      */
     public function set($path, $value): self

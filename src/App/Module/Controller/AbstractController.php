@@ -23,7 +23,7 @@ abstract class AbstractController implements ControllerInterface
         $body = $response->getBody();
         $body->write(json_encode($result));
         return $response
-            ->withHeader('content-type', 'application/json')
+            ->withHeader('content_type', 'application/json')
             ->withBody($body);
     }
 }

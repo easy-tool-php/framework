@@ -10,7 +10,6 @@ use Laminas\Db\Adapter\Adapter;
 
 class Manager
 {
-    public const CONFIG_NAME = 'env';
     public const CONFIG_PATH = 'database';
 
     public const DB_DRIVER = 'driver';
@@ -42,7 +41,7 @@ class Manager
      */
     public function initialize()
     {
-        $adapterConfigs = $this->config->get(self::CONFIG_PATH, self::CONFIG_NAME);
+        $adapterConfigs = $this->config->getEnv(self::CONFIG_PATH);
 
         foreach ($adapterConfigs as $name => $config) {
             if (

@@ -28,11 +28,16 @@ class Handler implements RequestHandlerInterface
         $this->objectManager = $objectManager;
         $this->responseFactory = $responseFactory;
 
+        // Middlewares in the pool are defined in `app/config/middlewares.php`.
         $this->middlewares = $config->get(null, self::CONFIG_MIDDLEWARES);
     }
 
     /**
-     * @inheritDoc
+     * Handle HTTP request with predefined middlewares
+     *
+     * A processed middleware will be shifted from the pool.
+     * Each middleware MUST execute `handle` method of this handler,
+     *     unless it needs to skip all next ones.
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
