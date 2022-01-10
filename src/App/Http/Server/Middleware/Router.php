@@ -60,12 +60,16 @@ class Router implements MiddlewareInterface
             return null;
         }
 
-        $class = $moduleConfig[ModuleManager::MODULE_NAMESPACE]
+        $class = '\\' . $moduleConfig[ModuleManager::MODULE_NAMESPACE]
             . 'Controller\\' . ucfirst($areaCode) . '\\'
             . str_replace('/', '\\', $this->variableTransformer->snakeToHump($controllerName)) . '\\'
             . str_replace('/', '\\', $this->variableTransformer->snakeToHump($actionName));
 
-        $reflectionClass = new ReflectionClass('\\' . $class);
+        if (!class_exists($class)) {
+            return null;
+        }
+
+        $reflectionClass = new ReflectionClass($class);
         $reflectionClass->implementsInterface(ControllerInterface::class);
 
         return $reflectionClass->implementsInterface(ControllerInterface::class)
