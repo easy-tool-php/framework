@@ -39,7 +39,7 @@ class Logger extends AbstractLogger
         }
 
         $handle = fopen($dir . '/' . $file, 'a');
-        fwrite($handle, sprintf("[ %s ][ %s ] %s\n", $level, date('Y-m-d H:i:s'), $message));
+        fwrite($handle, sprintf("[ %s ][ %s ] %s\n\n", $level, date('Y-m-d H:i:s'), $message));
         fclose($handle);
     }
 }

@@ -29,10 +29,13 @@ class Handler
 
     public function handle(Exception $exception)
     {
-        $traces = [];
-        foreach ($exception->getTrace() as $step) {
-            $traces[] = sprintf(
-                '%s%s%s%s',
+        $traces = $exception->getTrace();
+        $totalSteps = count($traces);
+        $steps = [];
+        foreach ($traces as $index => $step) {
+            $steps[] = sprintf(
+                '#%d %s%s%s%s',
+                $totalSteps - $index,
                 $step['class'] ?? '',
                 $step['type'] ?? '',
                 $step['function'],
@@ -40,18 +43,18 @@ class Handler
             );
         }
 
+        $this->logger->error($exception->getMessage() . "\n" . implode("\n", $steps));
+
         $response = $this->responseFactory->createResponse(500);
         $body = $response->getBody();
 
-        $this->logger->error($exception->getMessage() . "\n" . implode("\n", $traces));
-
         switch ($this->area->getCode()) {
             case Area::API:
-                $body->write(json_encode(['message' => $exception->getMessage(), 'traces' => $traces]));
+                $body->write(json_encode(['message' => $exception->getMessage(), 'traces' => $steps]));
                 break;
 
             default:
-                $body->write($exception->getMessage() . "\n" . implode("\n", $traces));
+                $body->write($exception->getMessage() . "\n" . implode("\n", $steps));
         }
 
         $this->responseHandler->handle($response->withBody($body));
