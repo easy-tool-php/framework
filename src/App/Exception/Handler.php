@@ -27,7 +27,34 @@ class Handler
         $this->responseFactory = $responseFactory;
     }
 
-    public function handle(Exception $exception)
+    /**
+     * Wrap given content with styled HTML wrapper
+     */
+    private function wrapHtml($content): string
+    {
+        return <<<HTML
+<html>
+    <head>
+        <style>
+        body {color: #545454; font:14px/22px '';}
+        span.class {color: #B71C1C;}
+        span.type {color: #545454;}
+        span.function {color: #43A047;}
+        span.file {color: #F57F17;}
+        span.line {color: #43A047;}
+        </style>
+    </head>
+    <body>
+        $content
+    </body>
+</html>
+HTML;
+    }
+
+    /**
+     * Handle output of exception
+     */
+    public function handle(Exception $exception): void
     {
         $traces = $exception->getTrace();
         $totalSteps = count($traces);
@@ -54,7 +81,27 @@ class Handler
                 break;
 
             default:
-                $body->write($exception->getMessage() . "\n" . implode("\n", $steps));
+                $steps = [];
+                foreach ($traces as $index => $step) {
+                    $steps[] = sprintf(
+                        '#%d %s%s%s%s',
+                        $totalSteps - $index,
+                        isset($step['class']) ? ('<span class="class">' . $step['class'] . '</span>') : '',
+                        $step['type'] ? ('<span class="type">' . $step['type'] . '</span>') : '',
+                        '<span class="function">' . $step['function'] . '</span>',
+                        isset($step['file']) ? sprintf(
+                            ' at <span class="file">%s</span> line <span class="line">%s</span>',
+                            $step['file'],
+                            $step['line']
+                        ) : ''
+                    );
+                }
+                $body->write(
+                    $this->wrapHtml(
+                        '<p>' . $exception->getMessage() . '</p>'
+                        . '<p>' . implode('<br/>', $steps) . '</p>'
+                    )
+                );
         }
 
         $this->responseHandler->handle($response->withBody($body));
