@@ -4,7 +4,7 @@ namespace EasyTool\Framework\App\Data;
 
 class DataObject
 {
-    private array $data;
+    protected array $data = [];
 
     public function __construct(array $data = [])
     {

@@ -12,6 +12,8 @@ class Manager
 {
     public const CONFIG_PATH = 'database';
 
+    public const DEFAULT_CONN = 'default';
+
     public const DB_DRIVER = 'driver';
     public const DB_HOST = 'host';
     public const DB_DATABASE = 'database';
@@ -67,8 +69,11 @@ class Manager
     /**
      * Get a database adapter with specified name
      */
-    public function getAdapter($name = 'default')
+    public function getAdapter(string $name = self::DEFAULT_CONN): Adapter
     {
+        if (!isset($this->adapters[$name])) {
+            throw new DatabaseException('Specified adapter does not exist.');
+        }
         return $this->adapters[$name];
     }
 }

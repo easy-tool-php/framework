@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App\Module\Controller;
 
+use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -18,11 +19,13 @@ abstract class AbstractController implements ControllerInterface
     public const CONTENT_TYPE_PNG = 'image/png';
     public const CONTENT_TYPE_HTML = 'text/html';
 
+    protected ObjectManager $objectManager;
     protected ServerRequestInterface $request;
     protected ResponseFactoryInterface $responseFactory;
 
     public function __construct(Context $context)
     {
+        $this->objectManager = $context->getObjectManager();
         $this->request = $context->getRequest();
         $this->responseFactory = $context->getResponseFactory();
     }

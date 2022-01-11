@@ -5,7 +5,6 @@ namespace EasyTool\Framework\App\Exception;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Http\Server\Response\Handler as ResponseHandler;
 use EasyTool\Framework\App\Logger;
-use Exception;
 use Psr\Http\Message\ResponseFactoryInterface;
 use ReflectionClass;
 
@@ -77,7 +76,7 @@ HTML;
                     ? '<Array>'
                     : (is_string($argument) ? ('\'' . $argument . '\'') : $argument));
             $argsHtml[] = '<span class="argument" title="' . html_entity_decode($title) . '">'
-                . (isset($params[$i]) ? ('$' . $params[$i]) : ('$argument' . $i))
+                . (isset($params[$i]) ? ('$' . $params[$i]) : ('$argument_' . ($i + 1)))
                 . '</span>';
         }
         return ' <span class="arguments">' . implode(', ', $argsHtml) . '</span> ';
@@ -86,7 +85,7 @@ HTML;
     /**
      * Handle output of exception
      */
-    public function handle(Exception $exception): void
+    public function handle($exception): void
     {
         $traces = $exception->getTrace();
         $totalSteps = count($traces);
