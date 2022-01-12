@@ -52,7 +52,7 @@ class Resource
         $sql = $this->sql->select()->where([$field => $id]);
         $statement = $this->sql->prepareStatementForSqlObject($sql);
         if (!empty(($data = $statement->execute()->current()))) {
-            $this->setData($data);
+            $model->setData($data);
         }
         return $this;
     }

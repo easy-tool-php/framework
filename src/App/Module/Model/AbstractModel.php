@@ -85,6 +85,11 @@ abstract class AbstractModel extends DataObject
         return static::PRIMARY_KEY;
     }
 
+    public function getResource(): Resource
+    {
+        return $this->resource;
+    }
+
     public static function createCollection(): AbstractCollection
     {
         return ObjectManager::getInstance()->create(static::class . '\\Collection');
