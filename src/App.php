@@ -126,6 +126,7 @@ class App
 
         /** @var ServerRequestInterface $httpRequest */
         /** @var RequestHandlerInterface $httpRequestHandler */
+        /** @var HttpResponseHandler $httpResponseHandler */
         $httpRequest = $this->objectManager->get(ServerRequestInterface::class);
         $httpRequestHandler = $this->objectManager->get(RequestHandlerInterface::class);
         $httpResponseHandler = $this->objectManager->get(HttpResponseHandler::class);
