@@ -19,6 +19,9 @@ use Symfony\Component\Console\Command\Command;
 
 class App
 {
+    public const FRAMEWORK_NAME = 'EasyTool';
+    public const PACKAGE_NAME = 'easy-tool/framework';
+
     private Area $area;
     private DatabaseManager $databaseManager;
     private EventManager $eventManager;
@@ -76,7 +79,7 @@ class App
     {
         $composerConfig = json_decode($this->fileManager->getFileContents('composer.lock'), true);
         foreach ($composerConfig['packages'] as $package) {
-            if ($package['name'] == 'easy-tool/framework') {
+            if ($package['name'] == self::PACKAGE_NAME) {
                 return $package['extra']['branch-alias'][$package['version']] ?? $package['version'];
             }
         }
@@ -93,7 +96,7 @@ class App
         /** @var ConsoleApplication $consoleApplication */
         $consoleApplication = $this->objectManager->get(
             ConsoleApplication::class,
-            ['name' => 'EasyTool', 'version' => $this->getVersion()]
+            ['name' => self::FRAMEWORK_NAME, 'version' => $this->getVersion()]
         );
         foreach ($this->moduleManager->getEnabledModules() as $module) {
             $files = $this->fileManager->getFiles($module[ModuleManager::MODULE_DIR] . '/Command', true, true);
