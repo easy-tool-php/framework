@@ -3,32 +3,30 @@
 namespace EasyTool\Framework\App\Module\Model;
 
 use EasyTool\Framework\App\Data\DataObject;
+use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\ObjectManager;
 
 abstract class AbstractModel extends DataObject
 {
-    protected ObjectManager $objectManager;
-    protected AbstractResource $resource;
+    public const MAIN_TABLE = null;
+    public const PRIMARY_KEY = 'id';
+    public const CONN_NAME = DatabaseManager::DEFAULT_CONN;
+
+    protected Resource $resource;
 
     protected array $orgData = [];
 
-    public function __construct(
-        ObjectManager $objectManager
-    ) {
-        $this->objectManager = $objectManager;
-        $this->construct();
+    public function __construct(ObjectManager $objectManager)
+    {
+        $this->resource = $objectManager->create(Resource::class, [
+            'mainTable' => static::MAIN_TABLE,
+            'connName' => static::CONN_NAME
+        ]);
     }
 
     protected function beforeSave(): self
     {
         return $this;
-    }
-
-    public function save(): self
-    {
-        $this->beforeSave();
-        $this->resource->save($this);
-        return $this->afterSave();
     }
 
     protected function afterSave(): self
@@ -41,13 +39,6 @@ abstract class AbstractModel extends DataObject
         return $this;
     }
 
-    public function delete(): self
-    {
-        $this->beforeDelete();
-        $this->resource->delete($this);
-        return $this->afterDelete();
-    }
-
     protected function afterDelete(): self
     {
         return $this;
@@ -58,34 +49,49 @@ abstract class AbstractModel extends DataObject
         return $this;
     }
 
-    public function load(): self
-    {
-        $this->beforeLoad();
-        $this->resource->load($this);
-        $this->orgData = $this->getData();
-        return $this->afterLoad();
-    }
-
     protected function afterLoad(): self
     {
         return $this;
     }
 
+    public function save()
+    {
+        $this->beforeSave();
+        $this->resource->save($this);
+        return $this->afterSave();
+    }
+
+    public function delete()
+    {
+        $this->beforeDelete();
+        $this->resource->delete($this);
+        return $this->afterDelete();
+    }
+
+    public function load()
+    {
+        $this->beforeLoad();
+        $this->resource->load($this, $this->getId());
+        return $this->afterLoad();
+    }
+
     public function getId(): ?int
     {
-        return $this->data[$this->resource->getPrimaryKey()] ?? null;
+        return $this->data[static::PRIMARY_KEY] ?? null;
     }
 
-    /**
-     * Set class name of resource model
-     */
-    protected function initialize(string $resourceClass): void
+    public function getPrimaryKey(): string
     {
-        $this->resource = $this->objectManager->create($resourceClass);
+        return static::PRIMARY_KEY;
     }
 
-    /**
-     * Do initialization
-     */
-    abstract protected function construct(): void;
+    public static function createCollection(): AbstractCollection
+    {
+        return ObjectManager::getInstance()->create(static::class . '\\Collection');
+    }
+
+    public static function createInstance(): AbstractModel
+    {
+        return ObjectManager::getInstance()->create(static::class);
+    }
 }

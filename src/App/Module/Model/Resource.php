@@ -6,30 +6,23 @@ use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
 use Laminas\Db\Sql\Sql;
 
-abstract class AbstractResource
+class Resource
 {
-    protected const DEFAULT_PRIMARY_KEY = 'id';
-
     protected ConnectionInterface $conn;
     protected Sql $sql;
 
-    protected string $connName;
-    protected string $mainTable;
-    protected string $primaryKey;
-
     public function __construct(
-        DatabaseManager $databaseManager
+        DatabaseManager $databaseManager,
+        string $mainTable,
+        string $connName
     ) {
-        $this->construct();
-        $this->sql = new Sql($databaseManager->getAdapter($this->connName), $this->mainTable);
+        $this->sql = new Sql($databaseManager->getAdapter($connName), $mainTable);
         $this->conn = $this->sql->getAdapter()->getDriver()->getConnection();
     }
 
-    public function getPrimaryKey(): string
-    {
-        return $this->primaryKey;
-    }
-
+    /**
+     * Save data of specified model
+     */
     public function save(AbstractModel $model): self
     {
         try {
@@ -50,17 +43,23 @@ abstract class AbstractResource
         return $this;
     }
 
+    /**
+     * Load data of specified ID and assign to given model
+     */
     public function load(AbstractModel $model, $id, $field = null): self
     {
-        $field = $field ?: $this->primaryKey;
+        $field = $field ?: $model->getPrimaryKey();
         $sql = $this->sql->select()->where([$field => $id]);
         $statement = $this->sql->prepareStatementForSqlObject($sql);
         if (!empty(($data = $statement->execute()->current()))) {
-            $model->setData($data);
+            $this->setData($data);
         }
         return $this;
     }
 
+    /**
+     * Remove record of given model
+     */
     public function delete(AbstractModel $model): self
     {
         try {
@@ -78,22 +77,4 @@ abstract class AbstractResource
 
         return $this;
     }
-
-    /**
-     * Set class name of resource model
-     */
-    protected function initialize(
-        string $mainTable,
-        string $primaryKey = self::DEFAULT_PRIMARY_KEY,
-        string $connName = DatabaseManager::DEFAULT_CONN
-    ): void {
-        $this->connName = $connName;
-        $this->mainTable = $mainTable;
-        $this->primaryKey = $primaryKey;
-    }
-
-    /**
-     * Do initialization
-     */
-    abstract protected function construct(): void;
 }
