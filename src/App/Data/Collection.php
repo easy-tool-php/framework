@@ -15,7 +15,7 @@ class Collection implements \IteratorAggregate
 
     public function getItemById($id): ?DataObject
     {
-        return isset($this->items[$id]) ? $this->items[$id] : null;
+        return $this->items[$id] ?? null;
     }
 
     public function getIterator(): ArrayIterator

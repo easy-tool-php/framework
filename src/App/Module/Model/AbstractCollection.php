@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App\Module\Model;
 
+use ArrayIterator;
 use EasyTool\Framework\App\Data\Collection;
 use EasyTool\Framework\App\ObjectManager;
 use Laminas\Db\Sql\Expression;
@@ -60,11 +61,33 @@ abstract class AbstractCollection extends Collection
         $this->select = $this->resource->getSqlProcessor()->select();
     }
 
+    /**
+     * Prepare for loading
+     */
+    protected function beforeLoad(): self
+    {
+        return $this;
+    }
+
+    /**
+     * Do something after loaded
+     */
+    protected function afterLoad(): self
+    {
+        return $this;
+    }
+
+    /**
+     * Returns the Select instance
+     */
     public function getSelect(): Select
     {
         return $this->select;
     }
 
+    /**
+     * Get size of the collection without paging
+     */
     public function getSize(): int
     {
         $select = clone $this->select;
@@ -73,8 +96,13 @@ abstract class AbstractCollection extends Collection
         return $statement->execute()->current()['count'];
     }
 
+    /**
+     * Retrieve all matched records from database and assign to new model instances
+     */
     public function load(): self
     {
+        $this->beforeLoad();
+
         $this->items = [];
         $statement = $this->resource->getSqlProcessor()->prepareStatementForSqlObject($this->select);
         foreach ($statement->execute() as $rowData) {
@@ -83,9 +111,31 @@ abstract class AbstractCollection extends Collection
             $model->setData($rowData);
             $this->items[$model->getId()] = $model;
         }
-        return $this;
+
+        return $this->afterLoad();
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function getIterator(): ArrayIterator
+    {
+        $this->load();
+        return parent::getIterator();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function count(): int
+    {
+        $this->load();
+        return parent::count();
+    }
+
+    /**
+     * Try to retrieve from the Select instance when an undefined method is called
+     */
     public function __call($name, $arguments): self
     {
         call_user_func_array([$this->select, $name], $arguments);

@@ -24,36 +24,57 @@ abstract class AbstractModel extends DataObject
         ]);
     }
 
+    /**
+     * Prepare for saving record
+     */
     protected function beforeSave(): self
     {
         return $this;
     }
 
+    /**
+     * Do something after saving record
+     */
     protected function afterSave(): self
     {
         return $this;
     }
 
+    /**
+     * Prepare for removing record
+     */
     protected function beforeDelete(): self
     {
         return $this;
     }
 
+    /**
+     * Do something after removing record
+     */
     protected function afterDelete(): self
     {
         return $this;
     }
 
+    /**
+     * Prepare for loading
+     */
     protected function beforeLoad(): self
     {
         return $this;
     }
 
+    /**
+     * Do something after loaded
+     */
     protected function afterLoad(): self
     {
         return $this;
     }
 
+    /**
+     * Store data of the model in database, create a new record if the value of primary key is not specified
+     */
     public function save()
     {
         $this->beforeSave();
@@ -61,6 +82,9 @@ abstract class AbstractModel extends DataObject
         return $this->afterSave();
     }
 
+    /**
+     * Remove the record
+     */
     public function delete()
     {
         $this->beforeDelete();
@@ -68,6 +92,9 @@ abstract class AbstractModel extends DataObject
         return $this->afterDelete();
     }
 
+    /**
+     * Retrieve the record from database with specified value of primary key
+     */
     public function load()
     {
         $this->beforeLoad();
@@ -76,28 +103,43 @@ abstract class AbstractModel extends DataObject
         return $this->afterLoad();
     }
 
+    /**
+     * Get the value of primary key
+     */
     public function getId(): ?int
     {
         return $this->data[static::PRIMARY_KEY] ?? null;
     }
 
+    /**
+     * Get primary key
+     */
     public function getPrimaryKey(): string
     {
         return static::PRIMARY_KEY;
     }
 
+    /**
+     * Returns the initialized resource instance
+     */
     public function getResource(): Resource
     {
         return $this->resource;
     }
 
-    public static function createCollection(): AbstractCollection
-    {
-        return ObjectManager::getInstance()->create(static::class . '\\Collection');
-    }
-
+    /**
+     * Returns a new model instance
+     */
     public static function createInstance(): AbstractModel
     {
         return ObjectManager::getInstance()->create(static::class);
+    }
+
+    /**
+     * Returns a new collection instance
+     */
+    public static function createCollection(): AbstractCollection
+    {
+        return ObjectManager::getInstance()->create(static::class . '\\Collection');
     }
 }
