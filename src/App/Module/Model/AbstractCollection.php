@@ -68,10 +68,9 @@ abstract class AbstractCollection extends Collection
     public function getSize(): int
     {
         $select = clone $this->select;
-        $select->reset(Select::COLUMNS);
-        $select->columns([new Expression('COUNT(*)')]);
+        $select->reset(Select::COLUMNS)->columns(['count' => new Expression('COUNT(*)')]);
         $statement = $this->resource->getSqlProcessor()->prepareStatementForSqlObject($select);
-        return $statement->execute()->current()[0];
+        return $statement->execute()->current()['count'];
     }
 
     public function load(): self
