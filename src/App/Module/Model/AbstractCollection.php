@@ -60,12 +60,6 @@ abstract class AbstractCollection extends Collection
         $this->select = $this->resource->getSqlProcessor()->select();
     }
 
-    public function __call($name, $arguments): self
-    {
-        call_user_func_array([$this->select, $name], $arguments);
-        return $this;
-    }
-
     public function getSelect(): Select
     {
         return $this->select;
@@ -90,6 +84,12 @@ abstract class AbstractCollection extends Collection
             $model->setData($rowData);
             $this->items[$model->getId()] = $model;
         }
+        return $this;
+    }
+
+    public function __call($name, $arguments): self
+    {
+        call_user_func_array([$this->select, $name], $arguments);
         return $this;
     }
 
