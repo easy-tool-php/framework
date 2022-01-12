@@ -87,6 +87,25 @@ class App
     }
 
     /**
+     * Collect classes which extends `\Symfony\Component\Console\Command\Command` from specified directory,
+     *     and add them into the console application
+     */
+    private function addCommands($consoleApplication, $dir, $namespace)
+    {
+        $files = $this->fileManager->getFiles($dir, true, true);
+        foreach ($files as $file) {
+            if (($pos = strrpos($file, '.')) && strtolower(substr($file, $pos)) == '.php') {
+                $class = '\\' . $namespace
+                    . str_replace('/', '\\', substr($file, 0, $pos));
+                $reflectionClass = new ReflectionClass($class);
+                if ($reflectionClass->isSubclassOf(Command::class)) {
+                    $consoleApplication->add($this->objectManager->create($class));
+                }
+            }
+        }
+    }
+
+    /**
      * Handle console command
      */
     public function handleCommand(): void
@@ -98,18 +117,17 @@ class App
             ConsoleApplication::class,
             ['name' => self::FRAMEWORK_NAME, 'version' => $this->getVersion()]
         );
+        $this->addCommands(
+            $consoleApplication,
+            __DIR__ . '/App/Command',
+            self::class . '\\Command\\'
+        );
         foreach ($this->moduleManager->getEnabledModules() as $module) {
-            $files = $this->fileManager->getFiles($module[ModuleManager::MODULE_DIR] . '/Command', true, true);
-            foreach ($files as $file) {
-                if (($pos = strrpos($file, '.')) && strtolower(substr($file, $pos)) == '.php') {
-                    $class = '\\' . $module[ModuleManager::MODULE_NAMESPACE] . 'Command\\'
-                        . str_replace('/', '\\', substr($file, 0, $pos));
-                    $reflectionClass = new ReflectionClass($class);
-                    if ($reflectionClass->isSubclassOf(Command::class)) {
-                        $consoleApplication->add($this->objectManager->create($class));
-                    }
-                }
-            }
+            $this->addCommands(
+                $consoleApplication,
+                $module[ModuleManager::MODULE_DIR] . '/Command',
+                $module[ModuleManager::MODULE_NAMESPACE] . 'Command\\'
+            );
         }
         $consoleApplication->run();
     }
