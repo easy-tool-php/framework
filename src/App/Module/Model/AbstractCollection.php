@@ -69,9 +69,9 @@ abstract class AbstractCollection extends Collection
     {
         $select = clone $this->select;
         $select->reset(Select::COLUMNS);
-
+        $select->columns([new Expression('COUNT(*)')]);
         $statement = $this->resource->getSqlProcessor()->prepareStatementForSqlObject($select);
-        return $statement->execute();
+        return $statement->execute()->current()[0];
     }
 
     public function load(): self
