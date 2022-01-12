@@ -65,6 +65,33 @@ class FileManager
         }
     }
 
+    public function getFiles(string $dir, $returnRelative = true, $recursion = false): array
+    {
+        if (is_dir($dir) && ($handler = opendir($dir))) {
+            $files = [];
+            while (($file = readdir($handler)) !== false) {
+                if ($file == '.' || $file == '..') {
+                    continue;
+                }
+                if (is_file(($filePath = $dir . '/' . $file))) {
+                    $files[] = $returnRelative ? $file : $filePath;
+                } elseif ($recursion && is_dir(($filePath = $dir . '/' . $file))) {
+                    $files = array_merge(
+                        $files,
+                        $returnRelative ?
+                            array_map(function ($child) use ($file) {
+                                return $file . '/' . $child;
+                            }, $this->getFiles($filePath, true, true))
+                            : $this->getFiles($filePath, false, true)
+                    );
+                }
+            }
+            closedir($handler);
+            return $files;
+        }
+        throw new FileException('Specified path is not a folder or could not be accessed.');
+    }
+
     /**
      * Get sub-folders of specified folder
      *
@@ -80,7 +107,12 @@ class FileManager
                     if ($recursion) {
                         $subFolders = array_merge(
                             $subFolders,
-                            $this->getSubFolders($filePath, true, true)
+                            $returnRelative
+                                ?
+                                array_map(function ($child) use ($file) {
+                                    return $file . '/' . $child;
+                                }, $this->getSubFolders($filePath, true, true))
+                                : $this->getSubFolders($filePath, false, true)
                         );
                     }
                 }

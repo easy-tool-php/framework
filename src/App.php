@@ -93,6 +93,16 @@ class App
             ConsoleApplication::class,
             ['name' => 'EasyTool', 'version' => $this->getVersion()]
         );
+        foreach ($this->moduleManager->getEnabledModules() as $module) {
+            $files = $this->fileManager->getFiles($module[ModuleManager::MODULE_DIR] . '/Command', true, true);
+            foreach ($files as $file) {
+                if (($pos = strrpos($file, '.')) && strtolower(substr($file, $pos)) == '.php') {
+                    $class = '\\' . $module[ModuleManager::MODULE_NAMESPACE] . 'Command\\'
+                        . str_replace('/', '\\', substr($file, 0, $pos));
+                    $consoleApplication->add($this->objectManager->create($class));
+                }
+            }
+        }
         $consoleApplication->run();
     }
 
