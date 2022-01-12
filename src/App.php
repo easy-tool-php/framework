@@ -13,7 +13,9 @@ use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ReflectionClass;
 use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\Console\Command\Command;
 
 class App
 {
@@ -99,7 +101,10 @@ class App
                 if (($pos = strrpos($file, '.')) && strtolower(substr($file, $pos)) == '.php') {
                     $class = '\\' . $module[ModuleManager::MODULE_NAMESPACE] . 'Command\\'
                         . str_replace('/', '\\', substr($file, 0, $pos));
-                    $consoleApplication->add($this->objectManager->create($class));
+                    $reflectionClass = new ReflectionClass($class);
+                    if ($reflectionClass->isSubclassOf(Command::class)) {
+                        $consoleApplication->add($this->objectManager->create($class));
+                    }
                 }
             }
         }
