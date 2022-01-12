@@ -122,7 +122,6 @@ class App
      */
     public function handleHttp(): void
     {
-        //set_error_handler();
         set_exception_handler([$this->objectManager->get(ExceptionHandler::class), 'handle']);
 
         /** @var ServerRequestInterface $httpRequest */
