@@ -72,6 +72,7 @@ abstract class AbstractModel extends DataObject
     {
         $this->beforeLoad();
         $this->resource->load($this, $this->getId());
+        $this->orgData = $this->data;
         return $this->afterLoad();
     }
 

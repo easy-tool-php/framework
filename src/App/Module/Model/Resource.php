@@ -77,4 +77,14 @@ class Resource
 
         return $this;
     }
+
+    public function getSqlProcessor(): Sql
+    {
+        return $this->sql;
+    }
+
+    public function getConnection(): ConnectionInterface
+    {
+        return $this->conn;
+    }
 }
