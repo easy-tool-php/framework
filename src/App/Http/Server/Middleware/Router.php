@@ -89,7 +89,7 @@ class Router implements MiddlewareInterface
      */
     private function matchApi(ServerRequestInterface $request): bool
     {
-        [$prefix, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
+        [$prefix, $path] = array_pad(explode('/', trim($request->getUri()->getPath(), '/'), 2), 2, null);
         if ($prefix != $this->config->get(self::CONFIG_API_PATH, self::CONFIG_NAME)) {
             return false;
         }
@@ -134,7 +134,7 @@ class Router implements MiddlewareInterface
      */
     private function matchBackend(ServerRequestInterface $request): bool
     {
-        [$prefix, $path] = explode('/', trim($request->getUri()->getPath(), '/'), 2);
+        [$prefix, $path] = array_pad(explode('/', trim($request->getUri()->getPath(), '/'), 2), 2, null);
         if ($prefix != $this->config->get(self::CONFIG_BACKEND_PATH, self::CONFIG_NAME)) {
             return false;
         }

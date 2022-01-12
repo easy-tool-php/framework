@@ -73,6 +73,14 @@ class App
     }
 
     /**
+     * Returns the Composer class loader instance
+     */
+    public function getClassLoader(): ClassLoader
+    {
+        return $this->classLoader;
+    }
+
+    /**
      * Return current version of the framework
      */
     public function getVersion(): ?string

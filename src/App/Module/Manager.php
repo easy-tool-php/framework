@@ -71,19 +71,23 @@ class Manager
     }
 
     /**
-     * Collect config data from `app/config/modules.php` and initialize modules
+     * Assign the sub-folders under `app/modules` as PSR-4 directory,
+     *     so that system is able to autoload the local modules.
      */
-    public function initialize(ClassLoader $classLoader): void
+    private function initAppPsr4(ClassLoader $classLoader)
     {
-        /**
-         * Assign the sub-folders under `app/modules` as PSR-4 directory,
-         *     so that system is able to autoload the local modules.
-         */
         $dir = $this->fileManager->getDirectoryPath(FileManager::DIR_MODULES);
         foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
             $classLoader->addPsr4('App\\' . $moduleDir . '\\', $dir . '/' . $moduleDir);
         }
+    }
 
+    /**
+     * Collect config data from `app/config/modules.php` and initialize modules.
+     * This method may be executed on upgrading.
+     */
+    public function initModules(ClassLoader $classLoader)
+    {
         /**
          * Collect all necessary data from cache in order to save memory and improve performance.
          *     Skip this step if the cache is disabled or empty.
@@ -97,6 +101,9 @@ class Manager
             $this->prepareForApp();
             return;
         }
+
+        $this->modules = [self::ENABLED => [], self::DISABLED => []];
+        $this->apiRoutes = $this->classAliases = $this->eventListeners = [];
 
         /**
          * Developer is able to enable/disable a module through editing `app/config/modules.php`.
@@ -123,6 +130,15 @@ class Manager
         $cache->set(self::CACHE_EVENTS, $this->eventListeners);
 
         $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
+    }
+
+    /**
+     * Initializing
+     */
+    public function initialize(ClassLoader $classLoader): void
+    {
+        $this->initAppPsr4($classLoader);
+        $this->initModules($classLoader);
     }
 
     /**
