@@ -2,6 +2,8 @@
 
 namespace EasyTool\Framework\App;
 
+use EasyTool\Framework\App;
+use EasyTool\Framework\Filesystem\FileManager;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
 
@@ -34,7 +36,7 @@ class Logger extends AbstractLogger
                 break;
         }
 
-        if (!is_dir(($dir = $this->fileManager->getDirectoryPath(FileManager::DIR_LOG)))) {
+        if (!is_dir(($dir = $this->app->getDirectoryPath(App::DIR_LOG)))) {
             mkdir($dir, 0755, true);
         }
 

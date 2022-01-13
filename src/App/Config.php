@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App;
 
+use EasyTool\Framework\App;
 use EasyTool\Framework\Code\Generator\ArrayGenerator;
 use Laminas\Code\Generator\FileGenerator;
 
@@ -12,20 +13,20 @@ class Config
     public const ENV = 'env';
     public const SYSTEM = 'system';
 
+    protected App $app;
     protected ArrayGenerator $arrayGenerator;
     protected FileGenerator $fileGenerator;
-    protected FileManager $fileManager;
 
     protected array $data = [self::SYSTEM => []];
 
     public function __construct(
+        App $app,
         ArrayGenerator $arrayGenerator,
-        FileGenerator $fileGenerator,
-        FileManager $fileManager
+        FileGenerator $fileGenerator
     ) {
+        $this->app = $app;
         $this->arrayGenerator = $arrayGenerator;
         $this->fileGenerator = $fileGenerator;
-        $this->fileManager = $fileManager;
     }
 
     /**
@@ -34,7 +35,7 @@ class Config
     public function get(?string $path, string $namespace = self::SYSTEM)
     {
         if (!isset($this->data[$namespace])) {
-            $configFile = $this->fileManager->getDirectoryPath(FileManager::DIR_CONFIG) . '/' . $namespace . '.php';
+            $configFile = $this->app->getDirectoryPath(App::DIR_CONFIG) . '/' . $namespace . '.php';
             $this->data[$namespace] = (is_file($configFile) && is_array(($config = require $configFile)))
                 ? $config : [];
         }
@@ -72,7 +73,7 @@ class Config
         if ($namespace == self::SYSTEM) {
             return $this->saveSystemConfig();
         }
-        $filename = $this->fileManager->getDirectoryPath(FileManager::DIR_CONFIG) . '/' . $namespace . '.php';
+        $filename = $this->app->getDirectoryPath(App::DIR_CONFIG) . '/' . $namespace . '.php';
         if (!is_dir(($dir = dirname($filename)))) {
             mkdir($dir, 0755, true);
         }

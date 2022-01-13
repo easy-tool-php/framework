@@ -3,13 +3,14 @@
 namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
+use EasyTool\Framework\App;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
-use EasyTool\Framework\App\FileManager;
 use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\Filesystem\FileManager;
 use EasyTool\Framework\Validation\Validator;
 
 class Manager
@@ -76,7 +77,7 @@ class Manager
      */
     private function initAppPsr4(ClassLoader $classLoader)
     {
-        $dir = $this->fileManager->getDirectoryPath(FileManager::DIR_MODULES);
+        $dir = $this->app->getDirectoryPath(App::DIR_MODULES);
         foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
             $classLoader->addPsr4('App\\' . $moduleDir . '\\', $dir . '/' . $moduleDir);
         }
@@ -137,7 +138,7 @@ class Manager
      */
     public function initialize(ClassLoader $classLoader): void
     {
-        $this->initAppPsr4($classLoader);
+        //$this->initAppPsr4($classLoader);
         $this->initModules($classLoader);
     }
 

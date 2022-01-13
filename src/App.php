@@ -6,11 +6,12 @@ use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
+use EasyTool\Framework\App\Exception\FileException;
 use EasyTool\Framework\App\Exception\Handler as ExceptionHandler;
-use EasyTool\Framework\App\FileManager;
 use EasyTool\Framework\App\Http\Server\Response\Handler as HttpResponseHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\Filesystem\FileManager;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
@@ -21,6 +22,16 @@ class App
 {
     public const FRAMEWORK_NAME = 'EasyTool';
     public const PACKAGE_NAME = 'easy-tool/framework';
+
+    public const DIR_APP = 'app';
+    public const DIR_CACHE = 'cache';
+    public const DIR_CONFIG = 'config';
+    public const DIR_LOG = 'log';
+    public const DIR_MODULES = 'app/modules';
+    public const DIR_PUB = 'pub';
+    public const DIR_ROOT = 'root';
+    public const DIR_TMP = 'tmp';
+    public const DIR_VAR = 'var';
 
     private Area $area;
     private DatabaseManager $databaseManager;
@@ -33,27 +44,19 @@ class App
     private string $directoryRoot;
 
     public function __construct(
-        Area $area,
-        DatabaseManager $databaseManager,
-        EventManager $eventManager,
-        FileManager $fileManager,
-        ModuleManager $moduleManager,
-        ObjectManager $objectManager,
         ClassLoader $classLoader,
+        ObjectManager $objectManager,
         string $directoryRoot
     ) {
-        $this->area = $area;
         $this->classLoader = $classLoader;
-        $this->databaseManager = $databaseManager;
         $this->directoryRoot = $directoryRoot;
-        $this->eventManager = $eventManager;
-        $this->fileManager = $fileManager;
-        $this->moduleManager = $moduleManager;
         $this->objectManager = $objectManager;
-
-        $this->initialize();
     }
 
+    /**
+     * Initializing need to be done at the beginning of handle methods instead of class construct,
+     *     because the App singleton may also injected by some classes which may cause dead loop.
+     */
     private function initialize(): void
     {
         /**
@@ -62,10 +65,15 @@ class App
         ini_set('date.timezone', 'UTC');
 
         /**
-         * Initializing of file manager MUST be executed at the first,
-         *     otherwise the system will not be able to find the correct position of config files.
+         * Getting below singletons here instead of through dependency injection
+         *     in order to avoid dead loop.
          */
-        $this->fileManager->initialize($this->directoryRoot);
+        $this->area = $this->objectManager->get(Area::class);
+        $this->databaseManager = $this->objectManager->get(DatabaseManager::class);
+        $this->eventManager = $this->objectManager->get(EventManager::class);
+        $this->fileManager = $this->objectManager->get(FileManager::class);
+        $this->moduleManager = $this->objectManager->get(ModuleManager::class);
+
         $this->objectManager->initialize();
         $this->eventManager->initialize();
         $this->databaseManager->initialize();
@@ -78,6 +86,47 @@ class App
     public function getClassLoader(): ClassLoader
     {
         return $this->classLoader;
+    }
+
+    /**
+     * Get absolute path of directory with specified type,
+     *     the types are defined as static variables of this class.
+     *
+     * @throws FileException
+     */
+    public function getDirectoryPath(string $type): string
+    {
+        switch ($type) {
+            case self::DIR_ROOT:
+                return $this->directoryRoot . '/';
+
+            case self::DIR_APP:
+                return $this->directoryRoot . '/app';
+
+            case self::DIR_CONFIG:
+                return $this->directoryRoot . '/app/config';
+
+            case self::DIR_MODULES:
+                return $this->directoryRoot . '/app/modules';
+
+            case self::DIR_PUB:
+                return $this->directoryRoot . '/pub';
+
+            case self::DIR_VAR:
+                return $this->directoryRoot . '/var';
+
+            case self::DIR_CACHE:
+                return $this->directoryRoot . '/var/cache';
+
+            case self::DIR_LOG:
+                return $this->directoryRoot . '/var/log';
+
+            case self::DIR_TMP:
+                return $this->directoryRoot . '/var/tmp';
+
+            default:
+                throw new FileException('Directory type is not supported.');
+        }
     }
 
     /**
@@ -118,6 +167,8 @@ class App
      */
     public function handleCommand(): void
     {
+        $this->initialize();
+
         $this->area->setCode(Area::CLI);
 
         /** @var ConsoleApplication $consoleApplication */
@@ -148,6 +199,8 @@ class App
      */
     public function handleHttp(): void
     {
+        $this->initialize();
+
         set_exception_handler([$this->objectManager->get(ExceptionHandler::class), 'handle']);
 
         /** @var ServerRequestInterface $httpRequest */
