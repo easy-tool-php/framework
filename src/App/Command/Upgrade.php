@@ -46,7 +46,7 @@ class Upgrade extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->cacheManager->getCache(ModuleManager::CACHE_NAME)->clear();
-        $this->moduleManager->initModules($this->app->getClassLoader());
+        $this->moduleManager->initialize($this->app->getClassLoader());
         foreach ($this->moduleManager->getEnabledModules() as $module) {
             $files = $this->fileManager->getFiles($module[ModuleManager::MODULE_DIR] . '/Setup', true, true);
             foreach ($files as $file) {

@@ -11,7 +11,7 @@ use EasyTool\Framework\App\Exception\Handler as ExceptionHandler;
 use EasyTool\Framework\App\Http\Server\Response\Handler as HttpResponseHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\ObjectManager;
-use EasyTool\Framework\Filesystem\FileManager;
+use Laminas\Code\Scanner\DirectoryScanner;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
@@ -36,7 +36,6 @@ class App
     private Area $area;
     private DatabaseManager $databaseManager;
     private EventManager $eventManager;
-    private FileManager $fileManager;
     private ModuleManager $moduleManager;
     private ObjectManager $objectManager;
     private ClassLoader $classLoader;
@@ -71,7 +70,6 @@ class App
         $this->area = $this->objectManager->get(Area::class);
         $this->databaseManager = $this->objectManager->get(DatabaseManager::class);
         $this->eventManager = $this->objectManager->get(EventManager::class);
-        $this->fileManager = $this->objectManager->get(FileManager::class);
         $this->moduleManager = $this->objectManager->get(ModuleManager::class);
 
         $this->objectManager->initialize();
@@ -134,7 +132,7 @@ class App
      */
     public function getVersion(): ?string
     {
-        $composerConfig = json_decode($this->fileManager->getFileContents('composer.lock'), true);
+        $composerConfig = json_decode(file_get_contents($this->directoryRoot . '/composer.lock'), true);
         foreach ($composerConfig['packages'] as $package) {
             if ($package['name'] == self::PACKAGE_NAME) {
                 return $package['extra']['branch-alias'][$package['version']] ?? $package['version'];
@@ -144,49 +142,29 @@ class App
     }
 
     /**
-     * Collect classes which extends `\Symfony\Component\Console\Command\Command` from specified directory,
-     *     and add them into the console application
-     */
-    private function addCommands($consoleApplication, $dir, $namespace)
-    {
-        $files = $this->fileManager->getFiles($dir, true, true);
-        foreach ($files as $file) {
-            if (($pos = strrpos($file, '.')) && strtolower(substr($file, $pos)) == '.php') {
-                $class = '\\' . $namespace
-                    . str_replace('/', '\\', substr($file, 0, $pos));
-                $reflectionClass = new ReflectionClass($class);
-                if ($reflectionClass->isSubclassOf(Command::class)) {
-                    $consoleApplication->add($this->objectManager->create($class));
-                }
-            }
-        }
-    }
-
-    /**
      * Handle console command
      */
     public function handleCommand(): void
     {
         $this->initialize();
-
         $this->area->setCode(Area::CLI);
 
         /** @var ConsoleApplication $consoleApplication */
+        /** @var DirectoryScanner $scanner */
         $consoleApplication = $this->objectManager->get(
             ConsoleApplication::class,
             ['name' => self::FRAMEWORK_NAME, 'version' => $this->getVersion()]
         );
-        $this->addCommands(
-            $consoleApplication,
-            __DIR__ . '/App/Command',
-            self::class . '\\Command\\'
-        );
+        $scanner = $this->objectManager->get(DirectoryScanner::class);
+        $scanner->addDirectory(__DIR__ . '/App/Command');
         foreach ($this->moduleManager->getEnabledModules() as $module) {
-            $this->addCommands(
-                $consoleApplication,
-                $module[ModuleManager::MODULE_DIR] . '/Command',
-                $module[ModuleManager::MODULE_NAMESPACE] . 'Command\\'
-            );
+            $scanner->addDirectory($module[ModuleManager::MODULE_DIR] . '/Command');
+        }
+        foreach ($scanner->getClassNames() as $className) {
+            $reflectionClass = new ReflectionClass($className);
+            if ($reflectionClass->isSubclassOf(Command::class)) {
+                $consoleApplication->add($this->objectManager->create($className));
+            }
         }
         $consoleApplication->run();
     }

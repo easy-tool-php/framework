@@ -38,6 +38,7 @@ class Manager
     public const MODULE_DI = 'di';
     public const MODULE_EVENTS = 'events';
 
+    private App $app;
     private CacheManager $cacheManager;
     private Config $config;
     private EventManager $eventManager;
@@ -56,6 +57,7 @@ class Manager
     ];
 
     public function __construct(
+        App $app,
         CacheManager $cacheManager,
         Config $config,
         EventManager $eventManager,
@@ -63,6 +65,7 @@ class Manager
         ObjectManager $objectManager,
         Validator $validator
     ) {
+        $this->app = $app;
         $this->cacheManager = $cacheManager;
         $this->config = $config;
         $this->eventManager = $eventManager;
@@ -72,22 +75,10 @@ class Manager
     }
 
     /**
-     * Assign the sub-folders under `app/modules` as PSR-4 directory,
-     *     so that system is able to autoload the local modules.
-     */
-    private function initAppPsr4(ClassLoader $classLoader)
-    {
-        $dir = $this->app->getDirectoryPath(App::DIR_MODULES);
-        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
-            $classLoader->addPsr4('App\\' . $moduleDir . '\\', $dir . '/' . $moduleDir);
-        }
-    }
-
-    /**
      * Collect config data from `app/config/modules.php` and initialize modules.
      * This method may be executed on upgrading.
      */
-    public function initModules(ClassLoader $classLoader)
+    public function initialize(ClassLoader $classLoader): void
     {
         /**
          * Collect all necessary data from cache in order to save memory and improve performance.
@@ -103,14 +94,14 @@ class Manager
             return;
         }
 
-        $this->modules = [self::ENABLED => [], self::DISABLED => []];
-        $this->apiRoutes = $this->classAliases = $this->eventListeners = [];
-
         /**
          * Developer is able to enable/disable a module through editing `app/config/modules.php`.
          *     Modules which do not exist in the config file will be added after initializing.
          */
+        $this->modules = [self::ENABLED => [], self::DISABLED => []];
+        $this->apiRoutes = $this->classAliases = $this->eventListeners = [];
         $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
+
         foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
             foreach ($directoryGroup as $directory) {
                 if (($moduleConfig = $this->checkModuleConfig($directory))) {
@@ -118,6 +109,15 @@ class Manager
                 }
             }
         }
+
+        $dir = $this->app->getDirectoryPath(App::DIR_MODULES);
+        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
+            $directory = $dir . '/' . $moduleDir;
+            if (($moduleConfig = $this->checkModuleConfig($directory))) {
+                $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
+            }
+        }
+
         $this->checkDependency();
         usort($this->modules[self::ENABLED], [$this, 'sortModules']);
         foreach ($this->modules[self::ENABLED] as $module) {
@@ -131,15 +131,6 @@ class Manager
         $cache->set(self::CACHE_EVENTS, $this->eventListeners);
 
         $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
-    }
-
-    /**
-     * Initializing
-     */
-    public function initialize(ClassLoader $classLoader): void
-    {
-        //$this->initAppPsr4($classLoader);
-        $this->initModules($classLoader);
     }
 
     /**
