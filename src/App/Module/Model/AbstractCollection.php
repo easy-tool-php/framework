@@ -25,8 +25,6 @@ use ReflectionClass;
  * @method combine(Select $select, $type = Select::COMBINE_UNION, $modifier = '')
  * @method reset(string $part)
  * @method setSpecification(string $index, string|array $specification)
- * @method getRawState(?string $key = null)
- * @method isTableReadOnly()
  *
  * @see \Laminas\Db\Sql\Select
  */

@@ -97,6 +97,7 @@ class Validator
                 $validateClass = static::class . '\\' . $this->variableTransformer->snakeToHump($validateName);
                 break;
             case 'array':
+            case 'bool':
             case 'int':
             case 'numeric':
             case 'string':

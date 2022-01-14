@@ -33,7 +33,20 @@ class Upgrade extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->processor->process();
+        $output->writeln('<info>Preparing for upgrade.</info>');
+        $this->processor->prepareForUpgrade();
+        $processors = $this->processor->collectSetupProcessors();
+
+        if (count($processors) > 0) {
+            $output->writeln('<info>Starting upgrade:</info>');
+            foreach ($processors as $processor) {
+                $output->write(sprintf('Processing `%s`...', $processor));
+                $this->processor->setup($processor);
+                $output->writeln(' Done');
+            }
+        }
+
+        $output->writeln('<info>All setups were processed.</info>');
         return 0;
     }
 }

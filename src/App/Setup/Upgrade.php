@@ -5,10 +5,14 @@ namespace EasyTool\Framework\App\Setup;
 use EasyTool\Framework\App;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
+use EasyTool\Framework\App\Database\Query;
+use EasyTool\Framework\App\Database\Setup as DatabaseSetup;
+use EasyTool\Framework\App\Database\Setup\Table;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\Module\Setup\AbstractSetup;
 use EasyTool\Framework\App\ObjectManager;
 use Laminas\Code\Scanner\DirectoryScanner;
+use Laminas\Db\Metadata\Source\Factory;
 use ReflectionClass;
 
 class Upgrade
@@ -18,6 +22,7 @@ class Upgrade
     private App $app;
     private CacheManager $cacheManager;
     private DatabaseManager $databaseManager;
+    private DatabaseSetup $databaseSetup;
     private ModuleManager $moduleManager;
     private ObjectManager $objectManager;
 
@@ -25,12 +30,14 @@ class Upgrade
         App $app,
         CacheManager $cacheManager,
         DatabaseManager $databaseManager,
+        DatabaseSetup $databaseSetup,
         ModuleManager $moduleManager,
         ObjectManager $objectManager
     ) {
         $this->app = $app;
         $this->cacheManager = $cacheManager;
         $this->databaseManager = $databaseManager;
+        $this->databaseSetup = $databaseSetup;
         $this->moduleManager = $moduleManager;
         $this->objectManager = $objectManager;
     }
@@ -44,6 +51,12 @@ class Upgrade
     private function checkSetupTable()
     {
         $adapter = $this->databaseManager->getAdapter();
+        $source = Factory::createSourceFromAdapter($adapter);
+        if (!in_array(self::DB_TABLE, $source->getTableNames())) {
+            $this->databaseSetup->createTable(self::DB_TABLE)
+                ->addColumn([Table::COL_NAME => 'class', Table::COL_NULLABLE => false])
+                ->process();
+        }
     }
 
     /**
@@ -53,14 +66,22 @@ class Upgrade
     {
         $this->checkSetupTable();
 
-        return [];
+        /** @var Query $query */
+        $query = $this->objectManager->create(Query::class, ['mainTable' => self::DB_TABLE]);
+        return $query->fetchCol();
     }
 
-    public function process()
+    public function prepareForUpgrade()
     {
         $this->cacheManager->getCache(ModuleManager::CACHE_NAME)->clear();
         $this->moduleManager->initialize($this->app->getClassLoader());
+    }
 
+    /**
+     * Collection setup processor name
+     */
+    public function collectSetupProcessors(): array
+    {
         /** @var DirectoryScanner $scanner */
         $scanner = $this->objectManager->create(DirectoryScanner::class);
         foreach ($this->moduleManager->getEnabledModules() as $module) {
@@ -68,6 +89,8 @@ class Upgrade
                 $scanner->addDirectory($directory);
             }
         }
+
+        $setups = [];
         $executedSetups = $this->getExecutedSetups();
         foreach ($scanner->getClassNames() as $className) {
             if (in_array($className, $executedSetups)) {
@@ -75,8 +98,18 @@ class Upgrade
             }
             $reflectionClass = new ReflectionClass($className);
             if ($reflectionClass->isSubclassOf(AbstractSetup::class)) {
-                $this->objectManager->get($className)->upgrade();
+                $setups[] = $className;
             }
         }
+        return $setups;
+    }
+
+    public function setup(string $processorClass)
+    {
+        $this->objectManager->create($processorClass)->upgrade();
+
+        /** @var Query $query */
+        $query = $this->objectManager->create(Query::class, ['mainTable' => self::DB_TABLE]);
+        $query->insert(self::DB_TABLE, ['class' => $processorClass]);
     }
 }
