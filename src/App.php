@@ -143,6 +143,11 @@ class App
 
     /**
      * Handle console command
+     *
+     * Collect all classes which extend the `\Symfony\Component\Console\Command\Command`
+     *     from 2 places:
+     * - `App/Command` directory of the framework
+     * - `Command` directory of all modules
      */
     public function handleCommand(): void
     {
