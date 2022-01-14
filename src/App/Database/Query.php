@@ -4,59 +4,145 @@ namespace EasyTool\Framework\App\Database;
 
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
+use Laminas\Db\Sql\Expression;
+use Laminas\Db\Sql\Predicate\PredicateSet;
+use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
+use Laminas\Db\Sql\TableIdentifier;
 
-class Query implements QueryInterface
+/**
+ * @method from(string|array|TableIdentifier $table)
+ * @method quantifier(string|Expression $quantifier)
+ * @method columns(array $columns, bool $prefixColumnsWithTable = true)
+ * @method join($name, $on, $columns = Select::SQL_STAR, $type = Select::JOIN_INNER)
+ * @method where($predicate, $combination = PredicateSet::OP_AND)
+ * @method group($group)
+ * @method having($predicate, $combination = PredicateSet::OP_AND)
+ * @method order(string|array|Expression $order)
+ * @method limit(int $limit)
+ * @method offset(int $offset)
+ * @method combine(Select $select, $type = Select::COMBINE_UNION, $modifier = '')
+ * @method reset(string $part)
+ * @method setSpecification(string $index, string|array $specification)
+ * @method getRawState(?string $key = null)
+ * @method isTableReadOnly()
+ *
+ * @see \Laminas\Db\Sql\Select
+ */
+class Query
 {
     protected ConnectionInterface $conn;
+    protected Select $select;
     protected Sql $sql;
+
+    protected ?array $result = null;
 
     public function __construct(
         DatabaseManager $databaseManager,
-        string $table,
+        string $mainTable = null,
         string $connName = DatabaseManager::DEFAULT_CONN
     ) {
-        $this->sql = new Sql($databaseManager->getAdapter($connName), $table);
+        $this->sql = new Sql($databaseManager->getAdapter($connName), $mainTable);
+        $this->select = $this->sql->select();
         $this->conn = $this->sql->getAdapter()->getDriver()->getConnection();
     }
 
+    /**
+     * Execute the query
+     */
+    private function execute(): void
+    {
+        $statement = $this->sql->prepareStatementForSqlObject($this->select);
+        $result = [];
+        while (($row = $statement->execute()->current())) {
+            $result[] = $row;
+        }
+    }
+
+    /**
+     * Retrieve all matched records
+     */
     public function fetchAll(): array
     {
-        // TODO: Implement fetchAll() method.
+        if ($this->result === null) {
+            $this->execute();
+        }
+        return $this->result;
     }
 
-    public function fetchPairs(string $keyColumn, string $valueColumn): array
+    /**
+     * Retrieve all matched records with the first 2 columns and assign them as an [key => value] format array.
+     */
+    public function fetchPair(): array
     {
-        // TODO: Implement fetchPairs() method.
+        if ($this->result === null) {
+            $this->execute();
+        }
+        if (empty($this->result)) {
+            return [];
+        }
+        [$keyCol, $valCol] = array_pad(array_keys($this->result[0]), 2, null);
+        if ($keyCol === null || $valCol === null) {
+            throw new \Exception('Not enough columns for fetching the result.');
+        }
+        $result = [];
+        foreach ($this->result as $row) {
+            $result[$row[$keyCol]] = $row[$valCol];
+        }
+        return $result;
     }
 
-    public function fetchColumn(string $column): array
+    /**
+     * Retrieve all matched records with the first column.
+     */
+    public function fetchCol(): array
     {
-        // TODO: Implement fetchColumn() method.
+        if ($this->result === null) {
+            $this->execute();
+        }
+        $result = [];
+        foreach ($this->result as $row) {
+            $result[] = $row[0];
+        }
+        return $result;
     }
 
-    public function fetchRow(): array
+    /**
+     * Retrieve the first record of matched result.
+     */
+    public function fetchRow(): ?array
     {
-        // TODO: Implement fetchRow() method.
+        if ($this->result === null) {
+            $this->execute();
+        }
+        return empty($this->result) ? null : $this->result[0];
     }
 
-    public function fetchOne(): string
+    /**
+     * Retrieve the first column of the first matched record.
+     */
+    public function fetchOne(): ?string
     {
-        // TODO: Implement fetchOne() method.
+        if ($this->result === null) {
+            $this->execute();
+        }
+        return empty($this->result) ? null : $this->result[0][0];
     }
 
-    public function getAllIds(): array
+    /**
+     * Returns the Select instance
+     */
+    public function getSelect()
     {
-        // TODO: Implement getAllIds() method.
+        return $this->select;
     }
 
-    public function getConnection(): object
+    /**
+     * Try to retrieve from the Select instance when an undefined method is called
+     */
+    public function __call($name, $arguments): self
     {
-        return$this->conn;
-    }
-
-    public function getSize(): int
-    {
-        // TODO: Implement getSize() method.
+        call_user_func_array([$this->select, $name], $arguments);
+        return $this;
     }
 }

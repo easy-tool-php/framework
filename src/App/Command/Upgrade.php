@@ -4,8 +4,10 @@ namespace EasyTool\Framework\App\Command;
 
 use EasyTool\Framework\App;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
+use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
-use EasyTool\Framework\Filesystem\FileManager;
+use EasyTool\Framework\App\ObjectManager;
+use Laminas\Code\Scanner\DirectoryScanner;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,20 +16,23 @@ class Upgrade extends Command
 {
     private App $app;
     private CacheManager $cacheManager;
-    private FileManager $fileManager;
+    private DatabaseManager $databaseManager;
     private ModuleManager $moduleManager;
+    private ObjectManager $objectManager;
 
     public function __construct(
         App $app,
         CacheManager $cacheManager,
-        FileManager $fileManager,
+        DatabaseManager $databaseManager,
         ModuleManager $moduleManager,
+        ObjectManager $objectManager,
         string $name = null
     ) {
         $this->app = $app;
         $this->cacheManager = $cacheManager;
-        $this->fileManager = $fileManager;
+        $this->databaseManager = $databaseManager;
         $this->moduleManager = $moduleManager;
+        $this->objectManager = $objectManager;
         parent::__construct($name);
     }
 
@@ -40,6 +45,11 @@ class Upgrade extends Command
             ->setDescription('Check all enabled modules for database upgrade');
     }
 
+    private function checkSetupTable()
+    {
+        $adapter = $this->databaseManager->getAdapter();
+    }
+
     /**
      * @inheritDoc
      */
@@ -47,14 +57,20 @@ class Upgrade extends Command
     {
         $this->cacheManager->getCache(ModuleManager::CACHE_NAME)->clear();
         $this->moduleManager->initialize($this->app->getClassLoader());
+
+        $this->checkSetupTable();
+
+        /** @var DirectoryScanner $scanner */
+        $scanner = $this->objectManager->create(DirectoryScanner::class);
         foreach ($this->moduleManager->getEnabledModules() as $module) {
-            $files = $this->fileManager->getFiles($module[ModuleManager::MODULE_DIR] . '/Setup', true, true);
-            foreach ($files as $file) {
-                if (($pos = strrpos($file, '.')) && strtolower(substr($file, $pos)) == '.php') {
-                    $class = '\\' . $module[ModuleManager::MODULE_NAMESPACE] . 'Setup\\'
-                        . str_replace('/', '\\', substr($file, 0, $pos));
-                    $reflectionClass = new ReflectionClass($class);
-                }
+            if (is_dir(($directory = $module[ModuleManager::MODULE_DIR] . '/Setup'))) {
+                $scanner->addDirectory($directory);
+            }
+        }
+        foreach ($scanner->getClassNames() as $className) {
+            $reflectionClass = new \ReflectionClass($className);
+            if ($reflectionClass->isSubclassOf(\EasyTool\Framework\App\Module\Setup\AbstractSetup::class)) {
+                $this->objectManager->get($className)->upgrade();
             }
         }
         return 0;

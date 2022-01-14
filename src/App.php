@@ -158,7 +158,9 @@ class App
         $scanner = $this->objectManager->get(DirectoryScanner::class);
         $scanner->addDirectory(__DIR__ . '/App/Command');
         foreach ($this->moduleManager->getEnabledModules() as $module) {
-            $scanner->addDirectory($module[ModuleManager::MODULE_DIR] . '/Command');
+            if (is_dir(($directory = $module[ModuleManager::MODULE_DIR] . '/Command'))) {
+                $scanner->addDirectory($directory);
+            }
         }
         foreach ($scanner->getClassNames() as $className) {
             $reflectionClass = new ReflectionClass($className);
@@ -178,7 +180,6 @@ class App
     public function handleHttp(): void
     {
         $this->initialize();
-
         set_exception_handler([$this->objectManager->get(ExceptionHandler::class), 'handle']);
 
         /** @var ServerRequestInterface $httpRequest */
