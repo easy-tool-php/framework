@@ -27,7 +27,7 @@ use Laminas\Db\Sql\TableIdentifier;
  *
  * @see \Laminas\Db\Sql\Select
  */
-class Query
+class Connection
 {
     protected ConnectionInterface $conn;
     protected Select $select;
@@ -56,6 +56,33 @@ class Query
             $result[] = $row;
         }
         $this->result = $result;
+    }
+
+    /**
+     * Create a new record with given data in specified table
+     */
+    public function insert(string $table, array $data)
+    {
+        $sql = $this->sql->insert($table)->values($data);
+        $this->conn->execute($this->sql->buildSqlString($sql));
+    }
+
+    /**
+     * Update a record with given data in specified table
+     */
+    public function update(string $table, array $where, array $data)
+    {
+        $sql = $this->sql->update($table)->where($where)->set($data);
+        $this->conn->execute($this->sql->buildSqlString($sql));
+    }
+
+    /**
+     * Remove a record by given condition in specified table
+     */
+    public function delete(string $table, array $where, array $data)
+    {
+        $sql = $this->sql->delete($table)->where($where);
+        $this->conn->execute($this->sql->buildSqlString($sql));
     }
 
     /**

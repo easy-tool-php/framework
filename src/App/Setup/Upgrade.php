@@ -4,8 +4,8 @@ namespace EasyTool\Framework\App\Setup;
 
 use EasyTool\Framework\App;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
+use EasyTool\Framework\App\Database\Connection;
 use EasyTool\Framework\App\Database\Manager as DbManager;
-use EasyTool\Framework\App\Database\Query;
 use EasyTool\Framework\App\Database\Setup as DbSetup;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\Module\Setup\AbstractSetup;
@@ -67,9 +67,9 @@ class Upgrade
     {
         $this->checkSetupTable();
 
-        /** @var Query $query */
-        $query = $this->objectManager->create(Query::class, ['mainTable' => self::DB_TABLE]);
-        return $query->fetchCol();
+        /** @var Connection $conn */
+        $conn = $this->objectManager->create(Connection::class, ['mainTable' => self::DB_TABLE]);
+        return $conn->fetchCol();
     }
 
     public function prepareForUpgrade()
@@ -109,8 +109,8 @@ class Upgrade
     {
         $this->objectManager->create($processorClass)->upgrade();
 
-        /** @var Query $query */
-        $query = $this->objectManager->create(Query::class, ['mainTable' => self::DB_TABLE]);
-        $query->insert(self::DB_TABLE, ['class' => $processorClass]);
+        /** @var Connection $conn */
+        $conn = $this->objectManager->create(Connection::class, ['mainTable' => self::DB_TABLE]);
+        $conn->insert(self::DB_TABLE, ['class' => $processorClass]);
     }
 }
