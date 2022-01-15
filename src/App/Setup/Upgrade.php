@@ -4,15 +4,13 @@ namespace EasyTool\Framework\App\Setup;
 
 use EasyTool\Framework\App;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
-use EasyTool\Framework\App\Database\Manager as DatabaseManager;
+use EasyTool\Framework\App\Database\Manager as DbManager;
 use EasyTool\Framework\App\Database\Query;
-use EasyTool\Framework\App\Database\Setup as DatabaseSetup;
-use EasyTool\Framework\App\Database\Setup\Table;
+use EasyTool\Framework\App\Database\Setup as DbSetup;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\Module\Setup\AbstractSetup;
 use EasyTool\Framework\App\ObjectManager;
 use Laminas\Code\Scanner\DirectoryScanner;
-use Laminas\Db\Metadata\Source\Factory;
 use ReflectionClass;
 
 class Upgrade
@@ -21,16 +19,16 @@ class Upgrade
 
     private App $app;
     private CacheManager $cacheManager;
-    private DatabaseManager $databaseManager;
-    private DatabaseSetup $databaseSetup;
+    private DbManager $databaseManager;
+    private DbSetup $databaseSetup;
     private ModuleManager $moduleManager;
     private ObjectManager $objectManager;
 
     public function __construct(
         App $app,
         CacheManager $cacheManager,
-        DatabaseManager $databaseManager,
-        DatabaseSetup $databaseSetup,
+        DbManager $databaseManager,
+        DbSetup $databaseSetup,
         ModuleManager $moduleManager,
         ObjectManager $objectManager
     ) {
@@ -50,12 +48,15 @@ class Upgrade
      */
     private function checkSetupTable()
     {
-        $adapter = $this->databaseManager->getAdapter();
-        $source = Factory::createSourceFromAdapter($adapter);
-        if (!in_array(self::DB_TABLE, $source->getTableNames())) {
+        if ($this->databaseSetup->isTableExist(self::DB_TABLE)) {
             $this->databaseSetup->createTable(self::DB_TABLE)
-                ->addColumn([Table::COL_NAME => 'class', Table::COL_NULLABLE => false])
-                ->process();
+                ->addColumn(
+                    [
+                        DbSetup::COL_NAME => 'class',
+                        DbSetup::COL_NULLABLE => false
+                    ],
+                    self::DB_TABLE
+                );
         }
     }
 
