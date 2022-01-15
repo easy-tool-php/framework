@@ -35,13 +35,13 @@ class Upgrade extends Command
     {
         $output->writeln('<info>Preparing for upgrade.</info>');
         $this->processor->prepareForUpgrade();
-        $processors = $this->processor->collectSetupProcessors();
+        $setups = $this->processor->collectSetups();
 
-        if (count($processors) > 0) {
+        if (count($setups) > 0) {
             $output->writeln('<info>Starting upgrade:</info>');
-            foreach ($processors as $processor) {
-                $output->write(sprintf('Processing `%s`...', $processor));
-                $this->processor->setup($processor);
+            foreach ($setups as $setup) {
+                $output->write(sprintf('Processing `%s`...', $setup));
+                $this->processor->process($setup);
                 $output->writeln(' Done');
             }
         }

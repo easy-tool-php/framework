@@ -51,7 +51,9 @@ class Upgrade
         if (!$this->databaseSetup->isTableExist(self::DB_TABLE)) {
             $this->databaseSetup->createTable(self::DB_TABLE, [
                 [
-                    DbSetup::COL_NAME => 'class',
+                    DbSetup::COL_NAME     => 'class',
+                    DbSetup::COL_TYPE     => DbSetup::COL_TYPE_VARCHAR,
+                    DbSetup::COL_LENGTH   => 128,
                     DbSetup::COL_NULLABLE => false
                 ]
             ]);
@@ -79,7 +81,7 @@ class Upgrade
     /**
      * Collection setup processor name
      */
-    public function collectSetupProcessors(): array
+    public function collectSetups(): array
     {
         /** @var DirectoryScanner $scanner */
         $scanner = $this->objectManager->create(DirectoryScanner::class);
@@ -103,12 +105,15 @@ class Upgrade
         return $setups;
     }
 
-    public function setup(string $processorClass)
+    /**
+     * Process a setup
+     */
+    public function process(string $processorClass)
     {
-        $this->objectManager->create($processorClass)->upgrade();
+        $this->objectManager->create($processorClass)->execute();
 
         /** @var Connection $conn */
         $conn = $this->objectManager->create(Connection::class, ['mainTable' => self::DB_TABLE]);
-        $conn->insert(self::DB_TABLE, ['class' => $processorClass]);
+        $conn->insert(['class' => $processorClass]);
     }
 }

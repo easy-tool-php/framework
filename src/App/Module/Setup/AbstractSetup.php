@@ -19,7 +19,7 @@ abstract class AbstractSetup
     }
 
     /**
-     * Upgrading script
+     * Setup script
      */
-    abstract public function upgrade(): void;
+    abstract public function execute(): void;
 }

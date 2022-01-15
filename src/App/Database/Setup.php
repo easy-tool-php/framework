@@ -10,7 +10,22 @@ use Laminas\Db\Metadata\MetadataInterface;
 use Laminas\Db\Metadata\Source\Factory;
 use Laminas\Db\Sql\AbstractSql;
 use Laminas\Db\Sql\Ddl\AlterTable;
+use Laminas\Db\Sql\Ddl\Column\BigInteger;
+use Laminas\Db\Sql\Ddl\Column\Binary;
+use Laminas\Db\Sql\Ddl\Column\Blob;
+use Laminas\Db\Sql\Ddl\Column\Boolean;
+use Laminas\Db\Sql\Ddl\Column\Char;
 use Laminas\Db\Sql\Ddl\Column\Column;
+use Laminas\Db\Sql\Ddl\Column\Date;
+use Laminas\Db\Sql\Ddl\Column\Datetime;
+use Laminas\Db\Sql\Ddl\Column\Decimal;
+use Laminas\Db\Sql\Ddl\Column\Floating;
+use Laminas\Db\Sql\Ddl\Column\Integer;
+use Laminas\Db\Sql\Ddl\Column\Text;
+use Laminas\Db\Sql\Ddl\Column\Time;
+use Laminas\Db\Sql\Ddl\Column\Timestamp;
+use Laminas\Db\Sql\Ddl\Column\Varbinary;
+use Laminas\Db\Sql\Ddl\Column\Varchar;
 use Laminas\Db\Sql\Ddl\CreateTable;
 
 class Setup
@@ -18,13 +33,54 @@ class Setup
     public const COL_NAME = 'name';
     public const COL_NULLABLE = 'nullable';
     public const COL_DEFAULT = 'default';
-    public const COL_TYPE = 'type';
+    public const COL_TYPE = 'data_type';
+    public const COL_LENGTH = 'length';
+    public const COL_UNSIGNED = 'unsigned';
+    public const COL_ZEROFILL = 'zerofill';
+    public const COL_AUTO_INCREMENT = 'identity';
+    public const COL_COMMENT = 'comment';
+    public const COL_COLUMN_FORMAT = 'format';
+    public const COL_STORAGE = 'storage';
+
+    public const COL_TYPE_INTEGER = 'INTEGER';
+    public const COL_TYPE_BIGINT = 'BIGINT';
+    public const COL_TYPE_FLOAT = 'FLOAT';
+    public const COL_TYPE_DECIMAL = 'DECIMAL';
+    public const COL_TYPE_BINARY = 'BINARY';
+    public const COL_TYPE_VARBINARY = 'VARBINARY';
+    public const COL_TYPE_BOOLEAN = 'BOOLEAN';
+    public const COL_TYPE_DATE = 'DATE';
+    public const COL_TYPE_TIME = 'TIME';
+    public const COL_TYPE_DATETIME = 'DATETIME';
+    public const COL_TYPE_TIMESTAMP = 'TIMESTAMP';
+    public const COL_TYPE_CHAR = 'CHAR';
+    public const COL_TYPE_VARCHAR = 'VARCHAR';
+    public const COL_TYPE_TEXT = 'TEXT';
+    public const COL_TYPE_BLOB = 'BLOB';
 
     private DatabaseManager $databaseManager;
     private ObjectManager $objectManager;
     private Validator $validator;
 
     private array $sources = [];
+
+    private array $columnTypes = [
+        self::COL_TYPE_INTEGER   => Integer::class,
+        self::COL_TYPE_BIGINT    => BigInteger::class,
+        self::COL_TYPE_FLOAT     => Floating::class,
+        self::COL_TYPE_DECIMAL   => Decimal::class,
+        self::COL_TYPE_BINARY    => Binary::class,
+        self::COL_TYPE_VARBINARY => Varbinary::class,
+        self::COL_TYPE_BOOLEAN   => Boolean::class,
+        self::COL_TYPE_DATE      => Date::class,
+        self::COL_TYPE_TIME      => Time::class,
+        self::COL_TYPE_DATETIME  => Datetime::class,
+        self::COL_TYPE_TIMESTAMP => Timestamp::class,
+        self::COL_TYPE_CHAR      => Char::class,
+        self::COL_TYPE_VARCHAR   => Varchar::class,
+        self::COL_TYPE_TEXT      => Text::class,
+        self::COL_TYPE_BLOB      => Blob::class
+    ];
 
     public function __construct(
         DatabaseManager $databaseManager,
@@ -42,6 +98,7 @@ class Setup
     private function execute(AbstractSql $sql, string $connName): void
     {
         $adapter = $this->databaseManager->getAdapter($connName);
+        echo $sql->getSqlString($adapter->getPlatform());
         $statement = $adapter->getDriver()->createStatement(
             $sql->getSqlString($adapter->getPlatform())
         );
@@ -56,9 +113,10 @@ class Setup
         if (
             !$this->validator->validate(
                 [
-                    self::COL_NAME => ['required'],
-                    self::COL_NULLABLE => ['bool'],
-                    self::COL_TYPE => ['string']
+                    self::COL_NAME     => ['required'],
+                    self::COL_TYPE     => ['required', 'string', 'options' => array_keys($this->columnTypes)],
+                    self::COL_LENGTH   => ['int'],
+                    self::COL_NULLABLE => ['bool']
                 ],
                 $metadata
             )
@@ -67,15 +125,17 @@ class Setup
         }
 
         $name = $metadata[self::COL_NAME];
+        $type = $metadata[self::COL_TYPE];
+        $length = $metadata[self::COL_LENGTH] ?? null;
         $nullable = $metadata[self::COL_NULLABLE] ?? null;
         $default = $metadata[self::COL_DEFAULT] ?? null;
-        unset($metadata[self::COL_NAME], $metadata[self::COL_NULLABLE], $metadata[self::COL_DEFAULT]);
 
-        return $this->objectManager->create(Column::class, [
-            'name' => $name,
+        return $this->objectManager->create($this->columnTypes[$type], [
+            'name'     => $name,
+            'length'     => $length,
             'nullable' => $nullable,
-            'default' => $default,
-            'options' => $metadata
+            'default'  => $default,
+            'options'  => $metadata
         ]);
     }
 

@@ -61,27 +61,27 @@ class Connection
     /**
      * Create a new record with given data in specified table
      */
-    public function insert(string $table, array $data)
+    public function insert(array $data)
     {
-        $sql = $this->sql->insert($table)->values($data);
+        $sql = $this->sql->insert()->values($data);
         $this->conn->execute($this->sql->buildSqlString($sql));
     }
 
     /**
      * Update a record with given data in specified table
      */
-    public function update(string $table, array $where, array $data)
+    public function update(array $where, array $data)
     {
-        $sql = $this->sql->update($table)->where($where)->set($data);
+        $sql = $this->sql->update()->where($where)->set($data);
         $this->conn->execute($this->sql->buildSqlString($sql));
     }
 
     /**
      * Remove a record by given condition in specified table
      */
-    public function delete(string $table, array $where, array $data)
+    public function delete(array $where)
     {
-        $sql = $this->sql->delete($table)->where($where);
+        $sql = $this->sql->delete()->where($where);
         $this->conn->execute($this->sql->buildSqlString($sql));
     }
 
