@@ -98,7 +98,6 @@ class Setup
     private function execute(AbstractSql $sql, string $connName): void
     {
         $adapter = $this->databaseManager->getAdapter($connName);
-        echo $sql->getSqlString($adapter->getPlatform());
         $statement = $adapter->getDriver()->createStatement(
             $sql->getSqlString($adapter->getPlatform())
         );
