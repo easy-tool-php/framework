@@ -5,6 +5,7 @@ namespace EasyTool\Framework\App\Database;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Validation\Validator;
+use InvalidArgumentException;
 use Laminas\Db\Metadata\MetadataInterface;
 use Laminas\Db\Metadata\Source\Factory;
 use Laminas\Db\Sql\AbstractSql;
@@ -83,10 +84,14 @@ class Setup
      */
     public function createTable(
         string $table,
+        array $columns,
         string $connName = DatabaseManager::DEFAULT_CONN
     ): self {
         /** @var CreateTable $sql */
         $sql = $this->objectManager->create(CreateTable::class, ['table' => $table]);
+        foreach ($columns as $column) {
+            $sql->addColumn($this->getDdlColumn($column));
+        }
         $this->execute($sql, $connName);
         return $this;
     }

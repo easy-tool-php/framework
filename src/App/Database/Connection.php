@@ -37,7 +37,7 @@ class Connection
 
     public function __construct(
         DatabaseManager $databaseManager,
-        string $mainTable = null,
+        string $mainTable,
         string $connName = DatabaseManager::DEFAULT_CONN
     ) {
         $this->sql = new Sql($databaseManager->getAdapter($connName), $mainTable);

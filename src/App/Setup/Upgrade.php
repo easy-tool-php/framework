@@ -48,15 +48,13 @@ class Upgrade
      */
     private function checkSetupTable()
     {
-        if ($this->databaseSetup->isTableExist(self::DB_TABLE)) {
-            $this->databaseSetup->createTable(self::DB_TABLE)
-                ->addColumn(
-                    [
-                        DbSetup::COL_NAME => 'class',
-                        DbSetup::COL_NULLABLE => false
-                    ],
-                    self::DB_TABLE
-                );
+        if (!$this->databaseSetup->isTableExist(self::DB_TABLE)) {
+            $this->databaseSetup->createTable(self::DB_TABLE, [
+                [
+                    DbSetup::COL_NAME => 'class',
+                    DbSetup::COL_NULLABLE => false
+                ]
+            ]);
         }
     }
 
