@@ -3,6 +3,8 @@
 namespace EasyTool\Framework\App\Database;
 
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
+use EasyTool\Framework\App\ObjectManager;
+use Exception;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Predicate\PredicateSet;
@@ -50,39 +52,40 @@ class Connection
      */
     private function execute(): void
     {
-        $statement = $this->sql->prepareStatementForSqlObject($this->select);
-        $result = [];
-        while (($row = $statement->execute()->current())) {
-            $result[] = $row;
+        $this->result = [];
+        foreach ($this->sql->prepareStatementForSqlObject($this->select)->execute() as $rowData) {
+            $this->result[] = $rowData;
         }
-        $this->result = $result;
     }
 
     /**
      * Create a new record with given data in specified table
      */
-    public function insert(array $data)
+    public function insert(array $data): self
     {
         $sql = $this->sql->insert()->values($data);
         $this->conn->execute($this->sql->buildSqlString($sql));
+        return $this;
     }
 
     /**
      * Update a record with given data in specified table
      */
-    public function update(array $where, array $data)
+    public function update(array $where, array $data): self
     {
         $sql = $this->sql->update()->where($where)->set($data);
         $this->conn->execute($this->sql->buildSqlString($sql));
+        return $this;
     }
 
     /**
      * Remove a record by given condition in specified table
      */
-    public function delete(array $where)
+    public function delete(array $where): self
     {
         $sql = $this->sql->delete()->where($where);
         $this->conn->execute($this->sql->buildSqlString($sql));
+        return $this;
     }
 
     /**
@@ -109,7 +112,7 @@ class Connection
         }
         [$keyCol, $valCol] = array_pad(array_keys($this->result[0]), 2, null);
         if ($keyCol === null || $valCol === null) {
-            throw new \Exception('Not enough columns for fetching the result.');
+            throw new Exception('Not enough columns for fetching the result.');
         }
         $result = [];
         foreach ($this->result as $row) {
@@ -128,7 +131,7 @@ class Connection
         }
         $result = [];
         foreach ($this->result as $row) {
-            $result[] = $row[0];
+            $result[] = reset($row);
         }
         return $result;
     }
@@ -152,7 +155,7 @@ class Connection
         if ($this->result === null) {
             $this->execute();
         }
-        return empty($this->result) ? null : $this->result[0][0];
+        return empty($this->result) ? null : reset($this->result[0]);
     }
 
     /**
@@ -170,5 +173,18 @@ class Connection
     {
         call_user_func_array([$this->select, $name], $arguments);
         return $this;
+    }
+
+    /**
+     * Returns a new connection instance
+     */
+    public static function createInstance(
+        string $mainTable,
+        string $connName = DatabaseManager::DEFAULT_CONN
+    ): self {
+        return ObjectManager::getInstance()->create(self::class, [
+            'mainTable' => $mainTable,
+            'connName'  => $connName
+        ]);
     }
 }

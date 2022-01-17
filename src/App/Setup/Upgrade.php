@@ -66,10 +66,7 @@ class Upgrade
     private function getExecutedSetups(): array
     {
         $this->checkSetupTable();
-
-        /** @var Connection $conn */
-        $conn = $this->objectManager->create(Connection::class, ['mainTable' => self::DB_TABLE]);
-        return $conn->fetchCol();
+        return Connection::createInstance(self::DB_TABLE)->fetchCol();
     }
 
     public function prepareForUpgrade()
@@ -111,9 +108,6 @@ class Upgrade
     public function process(string $processorClass)
     {
         $this->objectManager->create($processorClass)->execute();
-
-        /** @var Connection $conn */
-        $conn = $this->objectManager->create(Connection::class, ['mainTable' => self::DB_TABLE]);
-        $conn->insert(['class' => $processorClass]);
+        Connection::createInstance(self::DB_TABLE)->insert(['class' => $processorClass]);
     }
 }
