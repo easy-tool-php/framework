@@ -87,12 +87,4 @@ class Resource
     {
         return $this->sql;
     }
-
-    /**
-     * Returns the initialized connection instance
-     */
-    public function getConnection(): ConnectionInterface
-    {
-        return $this->conn;
-    }
 }
