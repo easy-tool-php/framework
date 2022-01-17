@@ -131,7 +131,7 @@ class Setup
 
         return $this->objectManager->create($this->columnTypes[$type], [
             'name'     => $name,
-            'length'     => $length,
+            'length'   => $length,
             'nullable' => $nullable,
             'default'  => $default,
             'options'  => $metadata
@@ -156,7 +156,7 @@ class Setup
     }
 
     /**
-     * Add a new column with given metadata into specified table
+     * Create a new column with given metadata into specified table
      */
     public function addColumn(
         array $metadata,
@@ -167,6 +167,17 @@ class Setup
         $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
         $sql->addColumn($this->getDdlColumn($metadata));
         $this->execute($sql, $connName);
+        return $this;
+    }
+
+    /**
+     * Add a new index with given metadata into specified table
+     */
+    public function addIndex(
+        array $metadata,
+        string $table,
+        string $connName = DatabaseManager::DEFAULT_CONN
+    ): self {
         return $this;
     }
 
@@ -183,8 +194,9 @@ class Setup
     /**
      * Get source of specified connection
      */
-    public function getSource(string $connName = DatabaseManager::DEFAULT_CONN): MetadataInterface
-    {
+    public function getSource(
+        string $connName = DatabaseManager::DEFAULT_CONN
+    ): MetadataInterface {
         if (!isset($this->sources[$connName])) {
             $this->sources[$connName] = Factory::createSourceFromAdapter(
                 $this->databaseManager->getAdapter($connName)

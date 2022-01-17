@@ -20,38 +20,54 @@ abstract class AbstractModel extends DataObject
     {
         $this->resource = $objectManager->create(Resource::class, [
             'mainTable' => static::MAIN_TABLE,
-            'connName' => static::CONN_NAME
+            'connName'  => static::CONN_NAME
         ]);
     }
 
     /**
      * Prepare for saving record
+     *
+     * This method is executed between begin transaction and commit in resource model.
+     *
+     * @see Resource::save
      */
-    protected function beforeSave(): self
+    public function beforeSave(): self
     {
         return $this;
     }
 
     /**
      * Do something after saving record
+     *
+     * This method is executed between begin transaction and commit in resource model.
+     *
+     * @see Resource::save
      */
-    protected function afterSave(): self
+    public function afterSave(): self
     {
         return $this;
     }
 
     /**
      * Prepare for removing record
+     *
+     * This method is executed between begin transaction and commit in resource model.
+     *
+     * @see Resource::delete
      */
-    protected function beforeDelete(): self
+    public function beforeDelete(): self
     {
         return $this;
     }
 
     /**
      * Do something after removing record
+     *
+     * This method is executed between begin transaction and commit in resource model.
+     *
+     * @see Resource::delete
      */
-    protected function afterDelete(): self
+    public function afterDelete(): self
     {
         return $this;
     }
@@ -77,9 +93,8 @@ abstract class AbstractModel extends DataObject
      */
     public function save()
     {
-        $this->beforeSave();
         $this->resource->save($this);
-        return $this->afterSave();
+        return $this;
     }
 
     /**
@@ -87,9 +102,8 @@ abstract class AbstractModel extends DataObject
      */
     public function delete()
     {
-        $this->beforeDelete();
         $this->resource->delete($this);
-        return $this->afterDelete();
+        return $this;
     }
 
     /**
@@ -128,7 +142,7 @@ abstract class AbstractModel extends DataObject
     }
 
     /**
-     * Returns a new model instance
+     * Quick way to create a new model instance
      */
     public static function createInstance(): AbstractModel
     {
@@ -136,7 +150,7 @@ abstract class AbstractModel extends DataObject
     }
 
     /**
-     * Returns a new collection instance
+     * Quick way to create a new collection instance
      */
     public static function createCollection(): AbstractCollection
     {
