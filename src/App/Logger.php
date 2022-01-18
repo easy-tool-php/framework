@@ -9,10 +9,14 @@ use Psr\Log\LogLevel;
 
 class Logger extends AbstractLogger
 {
+    private App $app;
     private FileManager $fileManager;
 
-    public function __construct(FileManager $fileManager)
-    {
+    public function __construct(
+        App $app,
+        FileManager $fileManager
+    ) {
+        $this->app = $app;
         $this->fileManager = $fileManager;
     }
 
