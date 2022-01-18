@@ -5,30 +5,15 @@ namespace EasyTool\Framework\App\Database;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\ObjectManager;
 use Exception;
+use InvalidArgumentException;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
-use Laminas\Db\Sql\Expression;
-use Laminas\Db\Sql\Predicate\PredicateSet;
+use Laminas\Db\Adapter\Driver\ResultInterface;
+use Laminas\Db\Adapter\Exception\InvalidQueryException;
+use Laminas\Db\Sql\Ddl\SqlInterface;
+use Laminas\Db\Sql\PreparableSqlInterface;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
-use Laminas\Db\Sql\TableIdentifier;
 
-/**
- * @method from(string|array|TableIdentifier $table)
- * @method quantifier(string|Expression $quantifier)
- * @method columns(array $columns, bool $prefixColumnsWithTable = true)
- * @method join($name, $on, $columns = Select::SQL_STAR, $type = Select::JOIN_INNER)
- * @method where($predicate, $combination = PredicateSet::OP_AND)
- * @method group($group)
- * @method having($predicate, $combination = PredicateSet::OP_AND)
- * @method order(string|array|Expression $order)
- * @method limit(int $limit)
- * @method offset(int $offset)
- * @method combine(Select $select, $type = Select::COMBINE_UNION, $modifier = '')
- * @method reset(string $part)
- * @method setSpecification(string $index, string|array $specification)
- *
- * @see \Laminas\Db\Sql\Select
- */
 class Connection
 {
     protected ConnectionInterface $conn;
@@ -39,10 +24,14 @@ class Connection
 
     public function __construct(
         DatabaseManager $databaseManager,
-        string $mainTable,
+        ObjectManager $objectManager,
+        ?string $mainTable = null,
         string $connName = DatabaseManager::DEFAULT_CONN
     ) {
-        $this->sql = new Sql($databaseManager->getAdapter($connName), $mainTable);
+        $this->sql = $objectManager->create(Sql::class, [
+            'adapter' => $databaseManager->getAdapter($connName),
+            'table'   => $mainTable
+        ]);
         $this->select = $this->sql->select();
         $this->conn = $this->sql->getAdapter()->getDriver()->getConnection();
     }
@@ -50,7 +39,7 @@ class Connection
     /**
      * Execute the query
      */
-    private function execute(): void
+    private function query(): void
     {
         $this->result = [];
         foreach ($this->sql->prepareStatementForSqlObject($this->select)->execute() as $rowData) {
@@ -61,11 +50,11 @@ class Connection
     /**
      * Create a new record with given data in specified table
      */
-    public function insert(array $data): self
+    public function insert(array $data): int
     {
         $sql = $this->sql->insert()->values($data);
         $this->conn->execute($this->sql->buildSqlString($sql));
-        return $this;
+        return $this->conn->getLastGeneratedValue();
     }
 
     /**
@@ -75,6 +64,33 @@ class Connection
     {
         $sql = $this->sql->update()->where($where)->set($data);
         $this->conn->execute($this->sql->buildSqlString($sql));
+        return $this;
+    }
+
+    /**
+     * Begin transaction
+     */
+    public function beginTransaction(): self
+    {
+        $this->conn->beginTransaction();
+        return $this;
+    }
+
+    /**
+     * Commit transaction
+     */
+    public function commit(): self
+    {
+        $this->conn->commit();
+        return $this;
+    }
+
+    /**
+     * Rollback
+     */
+    public function rollback(): self
+    {
+        $this->conn->rollback();
         return $this;
     }
 
@@ -94,7 +110,7 @@ class Connection
     public function fetchAll(): array
     {
         if ($this->result === null) {
-            $this->execute();
+            $this->query();
         }
         return $this->result;
     }
@@ -105,7 +121,7 @@ class Connection
     public function fetchPair(): array
     {
         if ($this->result === null) {
-            $this->execute();
+            $this->query();
         }
         if (empty($this->result)) {
             return [];
@@ -127,7 +143,7 @@ class Connection
     public function fetchCol(): array
     {
         if ($this->result === null) {
-            $this->execute();
+            $this->query();
         }
         $result = [];
         foreach ($this->result as $row) {
@@ -142,7 +158,7 @@ class Connection
     public function fetchRow(): ?array
     {
         if ($this->result === null) {
-            $this->execute();
+            $this->query();
         }
         return empty($this->result) ? null : $this->result[0];
     }
@@ -153,7 +169,7 @@ class Connection
     public function fetchOne(): ?string
     {
         if ($this->result === null) {
-            $this->execute();
+            $this->query();
         }
         return empty($this->result) ? null : reset($this->result[0]);
     }
@@ -161,25 +177,52 @@ class Connection
     /**
      * Returns the Select instance
      */
-    public function getSelect()
+    public function getSelect(): Select
     {
         return $this->select;
     }
 
     /**
-     * Try to retrieve from the Select instance when an undefined method is called
+     * Returns the initialized Sql instance
      */
-    public function __call($name, $arguments): self
+    public function getSqlProcessor(): Sql
     {
-        call_user_func_array([$this->select, $name], $arguments);
-        return $this;
+        return $this->sql;
+    }
+
+    /**
+     * Execute a SQL
+     *
+     * @param PreparableSqlInterface|SqlInterface|string $sql
+     * @throws Exception
+     */
+    public function execute($sql): ResultInterface
+    {
+        if ($sql instanceof PreparableSqlInterface) {
+            $statement = $this->sql->prepareStatementForSqlObject($sql);
+        } elseif ($sql instanceof SqlInterface) {
+            /** @var SqlInterface $sql */
+            $statement = $this->sql->getAdapter()->getDriver()->createStatement($sql->getSqlString());
+        } elseif (is_string($sql)) {
+            $statement = $this->sql->getAdapter()->getDriver()->createStatement($sql);
+        } else {
+            throw new InvalidArgumentException('Invalid SQL argument.');
+        }
+
+        try {
+            return $statement->execute();
+        } catch (InvalidQueryException $e) {
+            throw new InvalidQueryException(
+                sprintf("Meet exception:\n%s.\n\nThe SQL is:\n%s", $e->getMessage(), $statement->getSql())
+            );
+        }
     }
 
     /**
      * Returns a new connection instance
      */
     public static function createInstance(
-        string $mainTable,
+        ?string $mainTable,
         string $connName = DatabaseManager::DEFAULT_CONN
     ): self {
         return ObjectManager::getInstance()->create(self::class, [

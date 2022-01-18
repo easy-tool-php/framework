@@ -1,10 +1,12 @@
 <?php
 
-namespace EasyTool\Framework\App\Module\Model;
+namespace EasyTool\Framework\App\Model;
 
 use EasyTool\Framework\App\Data\DataObject;
+use EasyTool\Framework\App\Database\Connection;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\ObjectManager;
+use Exception;
 
 abstract class AbstractModel extends DataObject
 {
@@ -12,26 +14,22 @@ abstract class AbstractModel extends DataObject
     public const PRIMARY_KEY = 'id';
     public const CONN_NAME = DatabaseManager::DEFAULT_CONN;
 
-    protected Resource $resource;
+    protected Connection $conn;
 
     protected array $orgData = [];
 
     public function __construct(ObjectManager $objectManager)
     {
-        $this->resource = $objectManager->create(Resource::class, [
-            'mainTable' => static::MAIN_TABLE,
-            'connName'  => static::CONN_NAME
-        ]);
+        $this->conn = Connection::createInstance(static::MAIN_TABLE, static::CONN_NAME);
     }
 
     /**
      * Prepare for saving record
      *
-     * This method is executed between begin transaction and commit in resource model.
-     *
-     * @see Resource::save
+     * This method is executed between begin transaction and commit
+     *     so that the data modification can be rollback when meeting exception.
      */
-    public function beforeSave(): self
+    protected function beforeSave(): self
     {
         return $this;
     }
@@ -39,35 +37,26 @@ abstract class AbstractModel extends DataObject
     /**
      * Do something after saving record
      *
-     * This method is executed between begin transaction and commit in resource model.
-     *
-     * @see Resource::save
+     * This method is executed between begin transaction and commit
+     *     so that the data modification can be rollback when meeting exception.
      */
-    public function afterSave(): self
+    protected function afterSave(): self
     {
         return $this;
     }
 
     /**
      * Prepare for removing record
-     *
-     * This method is executed between begin transaction and commit in resource model.
-     *
-     * @see Resource::delete
      */
-    public function beforeDelete(): self
+    protected function beforeDelete(): self
     {
         return $this;
     }
 
     /**
      * Do something after removing record
-     *
-     * This method is executed between begin transaction and commit in resource model.
-     *
-     * @see Resource::delete
      */
-    public function afterDelete(): self
+    protected function afterDelete(): self
     {
         return $this;
     }
@@ -93,7 +82,20 @@ abstract class AbstractModel extends DataObject
      */
     public function save()
     {
-        $this->resource->save($this);
+        try {
+            $this->conn->beginTransaction();
+            $this->beforeSave();
+            $this->getId()
+                ? $this->conn->update([static::PRIMARY_KEY => $this->data[static::PRIMARY_KEY]], $this->getData())
+                : $this->set(static::PRIMARY_KEY, $this->conn->insert($this->getData()));
+            $this->afterSave();
+            $this->conn->commit();
+        } catch (PDOException $e) {
+            $this->conn->rollback();
+            throw $e;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+        }
         return $this;
     }
 
@@ -102,8 +104,9 @@ abstract class AbstractModel extends DataObject
      */
     public function delete()
     {
-        $this->resource->delete($this);
-        return $this;
+        $this->beforeDelete();
+        $this->conn->delete([static::PRIMARY_KEY => $this->data[static::PRIMARY_KEY]]);
+        return $this->afterDelete();
     }
 
     /**
@@ -111,10 +114,21 @@ abstract class AbstractModel extends DataObject
      */
     public function load()
     {
+        if (!$this->getId()) {
+            throw new Exception('Identifier is not set.');
+        }
         $this->beforeLoad();
-        $this->resource->load($this, $this->getId());
-        $this->orgData = $this->data;
+        $this->conn->getSelect()->where([static::PRIMARY_KEY => $this->data[static::PRIMARY_KEY]]);
+        $this->orgData = $this->data = $this->conn->fetchRow();
         return $this->afterLoad();
+    }
+
+    /**
+     * Returns the initialized resource instance
+     */
+    public function getConnection(): Resource
+    {
+        return $this->conn;
     }
 
     /**
@@ -131,14 +145,6 @@ abstract class AbstractModel extends DataObject
     public function getPrimaryKey(): string
     {
         return static::PRIMARY_KEY;
-    }
-
-    /**
-     * Returns the initialized resource instance
-     */
-    public function getResource(): Resource
-    {
-        return $this->resource;
     }
 
     /**

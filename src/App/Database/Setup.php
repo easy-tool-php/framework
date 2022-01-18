@@ -27,20 +27,21 @@ use Laminas\Db\Sql\Ddl\Column\Timestamp;
 use Laminas\Db\Sql\Ddl\Column\Varbinary;
 use Laminas\Db\Sql\Ddl\Column\Varchar;
 use Laminas\Db\Sql\Ddl\CreateTable;
+use Laminas\Db\Sql\Ddl\DropTable;
 
 class Setup
 {
     public const COL_NAME = 'name';
+    public const COL_TYPE = 'data_type';
     public const COL_NULLABLE = 'nullable';
     public const COL_DEFAULT = 'default';
-    public const COL_TYPE = 'data_type';
     public const COL_LENGTH = 'length';
     public const COL_UNSIGNED = 'unsigned';
-    public const COL_ZEROFILL = 'zerofill';
     public const COL_AUTO_INCREMENT = 'identity';
-    public const COL_COMMENT = 'comment';
+    public const COL_ZEROFILL = 'zerofill';
     public const COL_COLUMN_FORMAT = 'format';
     public const COL_STORAGE = 'storage';
+    public const COL_COMMENT = 'comment';
 
     public const COL_TYPE_INTEGER = 'INTEGER';
     public const COL_TYPE_BIGINT = 'BIGINT';
@@ -97,11 +98,8 @@ class Setup
      */
     private function execute(AbstractSql $sql, string $connName): void
     {
-        $adapter = $this->databaseManager->getAdapter($connName);
-        $statement = $adapter->getDriver()->createStatement(
-            $sql->getSqlString($adapter->getPlatform())
-        );
-        $statement->execute();
+        $conn = Connection::createInstance(null, $connName);
+        $conn->execute($conn->getSqlProcessor()->getSqlPlatform()->getTypeDecorator($sql));
     }
 
     /**
@@ -112,10 +110,14 @@ class Setup
         if (
             !$this->validator->validate(
                 [
-                    self::COL_NAME     => ['required'],
-                    self::COL_TYPE     => ['required', 'string', 'options' => array_keys($this->columnTypes)],
-                    self::COL_LENGTH   => ['int'],
-                    self::COL_NULLABLE => ['bool']
+                    self::COL_NAME           => ['required'],
+                    self::COL_TYPE           => ['required', 'string', 'options' => array_keys($this->columnTypes)],
+                    self::COL_LENGTH         => ['int'],
+                    self::COL_NULLABLE       => ['bool'],
+                    self::COL_UNSIGNED       => ['bool'],
+                    self::COL_AUTO_INCREMENT => ['bool'],
+                    self::COL_ZEROFILL       => ['bool'],
+                    self::COL_COMMENT        => ['string']
                 ],
                 $metadata
             )
@@ -156,6 +158,19 @@ class Setup
     }
 
     /**
+     * Drop a table
+     */
+    public function dropTable(
+        string $table,
+        string $connName = DatabaseManager::DEFAULT_CONN
+    ): self {
+        /** @var DropTable $sql */
+        $sql = $this->objectManager->create(DropTable::class, ['table' => $table]);
+        $this->execute($sql, $connName);
+        return $this;
+    }
+
+    /**
      * Create a new column with given metadata into specified table
      */
     public function addColumn(
@@ -171,6 +186,21 @@ class Setup
     }
 
     /**
+     * Drop a column in specified table
+     */
+    public function dropColumn(
+        string $column,
+        string $table,
+        string $connName = DatabaseManager::DEFAULT_CONN
+    ): self {
+        /** @var AlterTable $sql */
+        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql->dropColumn($column);
+        $this->execute($sql, $connName);
+        return $this;
+    }
+
+    /**
      * Add a new index with given metadata into specified table
      */
     public function addIndex(
@@ -178,6 +208,8 @@ class Setup
         string $table,
         string $connName = DatabaseManager::DEFAULT_CONN
     ): self {
+        /** @var AlterTable $sql */
+        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
         return $this;
     }
 

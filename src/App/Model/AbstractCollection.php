@@ -1,9 +1,10 @@
 <?php
 
-namespace EasyTool\Framework\App\Module\Model;
+namespace EasyTool\Framework\App\Model;
 
 use ArrayIterator;
 use EasyTool\Framework\App\Data\Collection;
+use EasyTool\Framework\App\Database\Connection;
 use EasyTool\Framework\App\ObjectManager;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Predicate\PredicateSet;
@@ -30,9 +31,10 @@ use ReflectionClass;
  */
 abstract class AbstractCollection extends Collection
 {
+    protected Connection $conn;
     protected ObjectManager $objectManager;
-    protected Resource $resource;
     protected Select $select;
+    protected bool $loaded = false;
     protected string $modelClass;
 
     public function __construct(
@@ -47,16 +49,11 @@ abstract class AbstractCollection extends Collection
      */
     protected function initialize(string $modelClass): void
     {
-        $this->modelClass = $modelClass;
-
         $reflectionClass = new ReflectionClass($modelClass);
         $constants = $reflectionClass->getConstants();
-        $this->resource = $this->objectManager->create(Resource::class, [
-            'mainTable' => $constants['MAIN_TABLE'],
-            'connName' => $constants['CONN_NAME']
-        ]);
-
-        $this->select = $this->resource->getSqlProcessor()->select();
+        $this->conn = Connection::createInstance($constants['MAIN_TABLE'], $constants['CONN_NAME']);
+        $this->modelClass = $modelClass;
+        $this->select = $this->conn->getSqlProcessor()->select();
     }
 
     /**
@@ -90,7 +87,7 @@ abstract class AbstractCollection extends Collection
     {
         $select = clone $this->select;
         $select->reset(Select::COLUMNS)->columns(['count' => new Expression('COUNT(*)')]);
-        $statement = $this->resource->getSqlProcessor()->prepareStatementForSqlObject($select);
+        $statement = $this->conn->getSqlProcessor()->prepareStatementForSqlObject($select);
         return $statement->execute()->current()['count'];
     }
 
@@ -99,17 +96,19 @@ abstract class AbstractCollection extends Collection
      */
     public function load(): self
     {
-        $this->beforeLoad();
+        if ($this->loaded) {
+            return $this;
+        }
 
+        $this->beforeLoad();
         $this->items = [];
-        $statement = $this->resource->getSqlProcessor()->prepareStatementForSqlObject($this->select);
-        foreach ($statement->execute() as $rowData) {
+        foreach ($this->conn->fetchAll() as $rowData) {
             /** @var AbstractModel $model */
             $model = $this->objectManager->create($this->modelClass);
             $model->setData($rowData);
             $this->items[$model->getId()] = $model;
         }
-
+        $this->loaded = true;
         return $this->afterLoad();
     }
 
@@ -142,6 +141,9 @@ abstract class AbstractCollection extends Collection
 
     /**
      * Initialization
+     *
+     * The `initialize` method should be executed
+     *     to specify related model class and build connection instance.
      */
     abstract protected function construct(): void;
 }
