@@ -15,7 +15,7 @@ use Laminas\Db\Sql\Ddl\Column\Binary;
 use Laminas\Db\Sql\Ddl\Column\Blob;
 use Laminas\Db\Sql\Ddl\Column\Boolean;
 use Laminas\Db\Sql\Ddl\Column\Char;
-use Laminas\Db\Sql\Ddl\Column\Column;
+use Laminas\Db\Sql\Ddl\Column\ColumnInterface;
 use Laminas\Db\Sql\Ddl\Column\Date;
 use Laminas\Db\Sql\Ddl\Column\Datetime;
 use Laminas\Db\Sql\Ddl\Column\Decimal;
@@ -26,6 +26,7 @@ use Laminas\Db\Sql\Ddl\Column\Time;
 use Laminas\Db\Sql\Ddl\Column\Timestamp;
 use Laminas\Db\Sql\Ddl\Column\Varbinary;
 use Laminas\Db\Sql\Ddl\Column\Varchar;
+use Laminas\Db\Sql\Ddl\Constraint\PrimaryKey;
 use Laminas\Db\Sql\Ddl\CreateTable;
 use Laminas\Db\Sql\Ddl\DropTable;
 
@@ -105,7 +106,7 @@ class Setup
     /**
      * Check whether the given metadata has right format for a column
      */
-    private function getDdlColumn(array $metadata): Column
+    private function getDdlColumn(array $metadata): ColumnInterface
     {
         if (
             !$this->validator->validate(
@@ -152,6 +153,14 @@ class Setup
         $sql = $this->objectManager->create(CreateTable::class, ['table' => $table]);
         foreach ($columns as $column) {
             $sql->addColumn($this->getDdlColumn($column));
+            if (!empty($column[self::COL_AUTO_INCREMENT])) {
+                $sql->addConstraint(
+                    $this->objectManager->create(PrimaryKey::class, [
+                        'name'    => strtoupper($column[self::COL_NAME]),
+                        'columns' => $column[self::COL_NAME]
+                    ])
+                );
+            }
         }
         $this->execute($sql, $connName);
         return $this;
