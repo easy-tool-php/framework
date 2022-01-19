@@ -44,6 +44,7 @@ class Setup
     public const COL_UNSIGNED = 'unsigned';
     public const COL_AUTO_INCREMENT = 'identity';
     public const COL_ZEROFILL = 'zerofill';
+    public const COL_ON_UPDATE = 'on_update';
     public const COL_FORMAT = 'format';
     public const COL_STORAGE = 'storage';
     public const COL_COMMENT = 'comment';
@@ -67,6 +68,7 @@ class Setup
     public const INDEX_NAME = 'name';
     public const INDEX_TYPE = 'type';
     public const INDEX_COLUMNS = 'columns';
+    public const INDEX_LENGTHS = 'lengths';
     public const INDEX_REF_TABLE = 'reference_table';
     public const INDEX_REF_COLUMN = 'reference_column';
     public const INDEX_DELETE_RULE = 'on_delete_rule';
@@ -142,6 +144,7 @@ class Setup
                     self::COL_UNSIGNED       => ['bool'],
                     self::COL_AUTO_INCREMENT => ['bool'],
                     self::COL_ZEROFILL       => ['bool'],
+                    self::COL_ON_UPDATE      => ['bool'],
                     self::COL_COMMENT        => ['string']
                 ],
                 $metadata
@@ -166,9 +169,10 @@ class Setup
         if (
             !$this->validator->validate(
                 [
-                    self::INDEX_NAME        => ['required', 'string'],
+                    self::INDEX_NAME        => ['string'],
                     self::INDEX_TYPE        => ['required', 'string', 'options' => array_keys($this->indexTypes)],
                     self::INDEX_COLUMNS     => ['required', 'array'],
+                    self::INDEX_LENGTHS     => ['array'],
                     self::INDEX_REF_TABLE   => ['string'],
                     self::INDEX_REF_COLUMN  => ['string'],
                     self::INDEX_DELETE_RULE => ['string'],
@@ -178,6 +182,11 @@ class Setup
             )
         ) {
             throw new InvalidArgumentException('Invalid index metadata.');
+        }
+        if (empty($metadata[self::INDEX_NAME])) {
+            $metadata[self::INDEX_NAME] = strtoupper(
+                $metadata[self::INDEX_TYPE] . '_' . implode('_', $metadata[self::INDEX_COLUMNS])
+            );
         }
         return $this->objectManager->create($this->indexTypes[$metadata[self::INDEX_TYPE]], [
             'name'            => $metadata[self::INDEX_NAME],
