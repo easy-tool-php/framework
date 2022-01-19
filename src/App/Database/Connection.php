@@ -202,7 +202,9 @@ class Connection
             $statement = $this->sql->prepareStatementForSqlObject($sql);
         } elseif ($sql instanceof SqlInterface) {
             /** @var SqlInterface $sql */
-            $statement = $this->sql->getAdapter()->getDriver()->createStatement($sql->getSqlString());
+            $statement = $this->sql->getAdapter()->getDriver()->createStatement(
+                $sql->getSqlString($this->sql->getAdapter()->getPlatform())
+            );
         } elseif (is_string($sql)) {
             $statement = $this->sql->getAdapter()->getDriver()->createStatement($sql);
         } else {
