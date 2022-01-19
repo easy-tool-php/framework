@@ -2,16 +2,16 @@
 
 namespace EasyTool\Framework\App\Module\Setup;
 
-use EasyTool\Framework\App\Database\Setup as DatabaseSetup;
+use EasyTool\Framework\App\Database\Setup as DbSetup;
 use EasyTool\Framework\App\ObjectManager;
 
 abstract class AbstractSetup
 {
-    protected DatabaseSetup $databaseSetup;
+    protected DbSetup $databaseSetup;
     protected ObjectManager $objectManager;
 
     public function __construct(
-        DatabaseSetup $databaseSetup,
+        DbSetup $databaseSetup,
         ObjectManager $objectManager
     ) {
         $this->databaseSetup = $databaseSetup;

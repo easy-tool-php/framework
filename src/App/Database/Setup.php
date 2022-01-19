@@ -26,9 +26,13 @@ use Laminas\Db\Sql\Ddl\Column\Time;
 use Laminas\Db\Sql\Ddl\Column\Timestamp;
 use Laminas\Db\Sql\Ddl\Column\Varbinary;
 use Laminas\Db\Sql\Ddl\Column\Varchar;
+use Laminas\Db\Sql\Ddl\Constraint\ConstraintInterface;
+use Laminas\Db\Sql\Ddl\Constraint\ForeignKey;
 use Laminas\Db\Sql\Ddl\Constraint\PrimaryKey;
+use Laminas\Db\Sql\Ddl\Constraint\UniqueKey;
 use Laminas\Db\Sql\Ddl\CreateTable;
 use Laminas\Db\Sql\Ddl\DropTable;
+use Laminas\Db\Sql\Ddl\Index\Index;
 
 class Setup
 {
@@ -40,7 +44,7 @@ class Setup
     public const COL_UNSIGNED = 'unsigned';
     public const COL_AUTO_INCREMENT = 'identity';
     public const COL_ZEROFILL = 'zerofill';
-    public const COL_COLUMN_FORMAT = 'format';
+    public const COL_FORMAT = 'format';
     public const COL_STORAGE = 'storage';
     public const COL_COMMENT = 'comment';
 
@@ -59,6 +63,19 @@ class Setup
     public const COL_TYPE_VARCHAR = 'VARCHAR';
     public const COL_TYPE_TEXT = 'TEXT';
     public const COL_TYPE_BLOB = 'BLOB';
+
+    public const INDEX_NAME = 'name';
+    public const INDEX_TYPE = 'type';
+    public const INDEX_COLUMNS = 'columns';
+    public const INDEX_REF_TABLE = 'reference_table';
+    public const INDEX_REF_COLUMN = 'reference_column';
+    public const INDEX_DELETE_RULE = 'on_delete_rule';
+    public const INDEX_UPDATE_RULE = 'on_update_rule';
+
+    public const INDEX_TYPE_BTREE = 'btree';
+    public const INDEX_TYPE_FOREIGN = 'foreign';
+    public const INDEX_TYPE_PRIMARY = 'primary';
+    public const INDEX_TYPE_UNIQUE = 'unique';
 
     private DatabaseManager $databaseManager;
     private ObjectManager $objectManager;
@@ -82,6 +99,13 @@ class Setup
         self::COL_TYPE_VARCHAR   => Varchar::class,
         self::COL_TYPE_TEXT      => Text::class,
         self::COL_TYPE_BLOB      => Blob::class
+    ];
+
+    private array $indexTypes = [
+        self::INDEX_TYPE_BTREE   => Index::class,
+        self::INDEX_TYPE_FOREIGN => ForeignKey::class,
+        self::INDEX_TYPE_PRIMARY => PrimaryKey::class,
+        self::INDEX_TYPE_UNIQUE  => UniqueKey::class,
     ];
 
     public function __construct(
@@ -111,7 +135,7 @@ class Setup
         if (
             !$this->validator->validate(
                 [
-                    self::COL_NAME           => ['required'],
+                    self::COL_NAME           => ['required', 'string'],
                     self::COL_TYPE           => ['required', 'string', 'options' => array_keys($this->columnTypes)],
                     self::COL_LENGTH         => ['int'],
                     self::COL_NULLABLE       => ['bool'],
@@ -123,21 +147,45 @@ class Setup
                 $metadata
             )
         ) {
-            throw new InvalidArgumentException('Invalid attribute format.');
+            throw new InvalidArgumentException('Invalid column metadata.');
         }
-
-        $name = $metadata[self::COL_NAME];
-        $type = $metadata[self::COL_TYPE];
-        $length = $metadata[self::COL_LENGTH] ?? null;
-        $nullable = $metadata[self::COL_NULLABLE] ?? null;
-        $default = $metadata[self::COL_DEFAULT] ?? null;
-
-        return $this->objectManager->create($this->columnTypes[$type], [
-            'name'     => $name,
-            'length'   => $length,
-            'nullable' => $nullable,
-            'default'  => $default,
+        return $this->objectManager->create($this->columnTypes[$metadata[self::COL_TYPE]], [
+            'name'     => $metadata[self::COL_NAME],
+            'length'   => $metadata[self::COL_LENGTH] ?? null,
+            'nullable' => $metadata[self::COL_NULLABLE] ?? null,
+            'default'  => $metadata[self::COL_DEFAULT] ?? null,
             'options'  => $metadata
+        ]);
+    }
+
+    /**
+     * Check whether the given metadata has right format for an index
+     */
+    private function getDdlIndex($metadata): ConstraintInterface
+    {
+        if (
+            !$this->validator->validate(
+                [
+                    self::INDEX_NAME        => ['required', 'string'],
+                    self::INDEX_TYPE        => ['required', 'string', 'options' => array_keys($this->indexTypes)],
+                    self::INDEX_COLUMNS     => ['required', 'array'],
+                    self::INDEX_REF_TABLE   => ['string'],
+                    self::INDEX_REF_COLUMN  => ['string'],
+                    self::INDEX_DELETE_RULE => ['string'],
+                    self::INDEX_UPDATE_RULE => ['string']
+                ],
+                $metadata
+            )
+        ) {
+            throw new InvalidArgumentException('Invalid index metadata.');
+        }
+        return $this->objectManager->create($this->indexTypes[$metadata[self::INDEX_TYPE]], [
+            'name'            => $metadata[self::INDEX_NAME],
+            'columns'         => $metadata[self::INDEX_COLUMNS],
+            'referenceTable'  => $metadata[self::INDEX_REF_TABLE] ?? null,
+            'referenceColumn' => $metadata[self::INDEX_REF_COLUMN] ?? null,
+            'onDeleteRule'    => $metadata[self::INDEX_DELETE_RULE] ?? null,
+            'onUpdateRule'    => $metadata[self::INDEX_UPDATE_RULE] ?? null
         ]);
     }
 
@@ -147,6 +195,7 @@ class Setup
     public function createTable(
         string $table,
         array $columns,
+        array $indexes = [],
         string $connName = DatabaseManager::DEFAULT_CONN
     ): self {
         /** @var CreateTable $sql */
@@ -155,12 +204,18 @@ class Setup
             $sql->addColumn($this->getDdlColumn($column));
             if (!empty($column[self::COL_AUTO_INCREMENT])) {
                 $sql->addConstraint(
-                    $this->objectManager->create(PrimaryKey::class, [
-                        'name'    => strtoupper($column[self::COL_NAME]),
-                        'columns' => $column[self::COL_NAME]
-                    ])
+                    $this->getDdlIndex(
+                        [
+                            self::INDEX_NAME    => strtoupper($column[self::COL_NAME]),
+                            self::INDEX_TYPE    => self::INDEX_TYPE_PRIMARY,
+                            self::INDEX_COLUMNS => [$column[self::COL_NAME]]
+                        ]
+                    )
                 );
             }
+        }
+        foreach ($indexes as $index) {
+            $sql->addConstraint($this->getDdlIndex($index));
         }
         $this->execute($sql, $connName);
         return $this;
@@ -198,13 +253,13 @@ class Setup
      * Drop a column in specified table
      */
     public function dropColumn(
-        string $column,
+        string $columnName,
         string $table,
         string $connName = DatabaseManager::DEFAULT_CONN
     ): self {
         /** @var AlterTable $sql */
         $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
-        $sql->dropColumn($column);
+        $sql->dropColumn($columnName);
         $this->execute($sql, $connName);
         return $this;
     }
@@ -219,6 +274,23 @@ class Setup
     ): self {
         /** @var AlterTable $sql */
         $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql->addConstraint($this->getDdlIndex($metadata));
+        $this->execute($sql, $connName);
+        return $this;
+    }
+
+    /**
+     * Drop an index in specified table
+     */
+    public function dropIndex(
+        string $indexName,
+        string $table,
+        string $connName = DatabaseManager::DEFAULT_CONN
+    ): self {
+        /** @var AlterTable $sql */
+        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql->dropConstraint($indexName);
+        $this->execute($sql, $connName);
         return $this;
     }
 
