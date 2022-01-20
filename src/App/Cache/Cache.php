@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App\Cache;
 
+use EasyTool\Framework\App\Cache\Exception\InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
 
 class Cache implements CacheInterface
@@ -10,14 +11,29 @@ class Cache implements CacheInterface
     protected array $data = [];
     protected string $name;
     protected bool $isEnabled;
+    protected bool $saveOnDestruct;
 
-    public function __construct(Adapter\AdapterInterface $adapter, string $name, bool $isEnabled)
-    {
+    public function __construct(
+        Adapter\AdapterInterface $adapter,
+        string $name,
+        bool $isEnabled,
+        bool $saveOnDestruct = true
+    ) {
         $this->adapter = $adapter;
         $this->isEnabled = $isEnabled;
         $this->name = $name;
-
+        $this->saveOnDestruct = $saveOnDestruct;
         $this->data = $this->adapter->load($this->name);
+    }
+
+    /**
+     * Check whether the cache key is valid.
+     */
+    protected function checkKey($key)
+    {
+        if (!is_string($key)) {
+            throw new InvalidArgumentException('Invalid cache key.');
+        }
     }
 
     /**
@@ -33,6 +49,7 @@ class Cache implements CacheInterface
      */
     public function has($key): bool
     {
+        $this->checkKey($key);
         return isset($this->data[$key]);
     }
 
@@ -41,6 +58,7 @@ class Cache implements CacheInterface
      */
     public function get($key, $default = null)
     {
+        $this->checkKey($key);
         return isset($this->data[$key])
             ? ($this->data[$key]['ttl'] !== null
                 ? (time() - $this->data[$key]['time'] <= $this->data[$key]['ttl']
@@ -57,6 +75,7 @@ class Cache implements CacheInterface
      */
     public function set($key, $value, $ttl = null): bool
     {
+        $this->checkKey($key);
         $this->data[$key] = ['ttl' => $ttl, 'time' => time(), 'value' => $value];
         return true;
     }
@@ -66,6 +85,7 @@ class Cache implements CacheInterface
      */
     public function delete($key): bool
     {
+        $this->checkKey($key);
         unset($this->data[$key]);
         return true;
     }
@@ -98,6 +118,7 @@ class Cache implements CacheInterface
     {
         $time = time();
         foreach ($values as $key => $value) {
+            $this->checkKey($key);
             $this->data[$key] = ['ttl' => $ttl, 'time' => $time, 'value' => $value];
         }
         return true;
@@ -128,6 +149,8 @@ class Cache implements CacheInterface
      */
     public function __destruct()
     {
-        $this->save();
+        if ($this->saveOnDestruct) {
+            $this->save();
+        }
     }
 }

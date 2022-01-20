@@ -1,6 +1,6 @@
 <?php
 
-namespace EasyTool\Framework\App\Http;
+namespace EasyTool\Framework\Http;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamFactoryInterface;

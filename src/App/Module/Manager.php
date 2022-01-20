@@ -52,7 +52,7 @@ class Manager
     private array $classAliases = [];
 
     private array $modules = [
-        self::ENABLED => [],
+        self::ENABLED  => [],
         self::DISABLED => []
     ];
 
@@ -129,6 +129,7 @@ class Manager
         $cache->set(self::CACHE_API, $this->apiRoutes);
         $cache->set(self::CACHE_DI, $this->classAliases);
         $cache->set(self::CACHE_EVENTS, $this->eventListeners);
+        $cache->save();
 
         $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
     }
@@ -138,8 +139,10 @@ class Manager
      */
     private function prepareForApp()
     {
-        foreach ($this->eventListeners as $name => $listener) {
-            $this->eventManager->addListener($name, $listener);
+        foreach ($this->eventListeners as $name => $listeners) {
+            foreach ($listeners as $listener) {
+                $this->eventManager->addListener($name, $listener);
+            }
         }
         $this->objectManager->collectClassAliases($this->classAliases);
     }
@@ -197,11 +200,11 @@ class Manager
             && is_array(($config = require $configFile))
             && $this->validator->validate(
                 [
-                    self::MODULE_NAME => ['required'],
+                    self::MODULE_NAME    => ['required'],
                     self::MODULE_DEPENDS => ['array'],
-                    self::MODULE_ROUTE => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]],
-                    self::MODULE_DI => ['array'],
-                    self::MODULE_EVENTS => ['array']
+                    self::MODULE_ROUTE   => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]],
+                    self::MODULE_DI      => ['array'],
+                    self::MODULE_EVENTS  => ['array']
                 ],
                 $config
             ))
@@ -234,7 +237,14 @@ class Manager
             is_file(($configFile = $moduleConfig[self::MODULE_DIR] . '/config/' . $type . '.php'))
             && is_array(($config = require $configFile))
         ) {
-            return $config;
+            switch ($type) {
+                case self::CONFIG_TYPE_EVENTS:
+                    if (!$this->eventManager->validateConfig($config)) {
+                        throw new ModuleException('Invalid event config of ' . $moduleConfig[self::MODULE_NAME]);
+                    }
+                default:
+                    return $config;
+            }
         }
         return [];
     }
@@ -252,7 +262,7 @@ class Manager
             $this->classAliases,
             $this->getConfig($moduleConfig, self::CONFIG_TYPE_DI)
         );
-        $this->eventListeners = array_merge(
+        $this->eventListeners = array_merge_recursive(
             $this->eventListeners,
             $this->getConfig($moduleConfig, self::CONFIG_TYPE_EVENTS)
         );
@@ -272,5 +282,13 @@ class Manager
     public function getEnabledModules(): array
     {
         return $this->modules[self::ENABLED];
+    }
+
+    /**
+     * Get all modules
+     */
+    public function getAllModules(): array
+    {
+        return array_merge($this->modules[self::ENABLED], $this->modules[self::DISABLED]);
     }
 }

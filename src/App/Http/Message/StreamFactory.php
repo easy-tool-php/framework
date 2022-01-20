@@ -1,12 +1,12 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message\Stream;
+namespace EasyTool\Framework\App\Http\Message;
 
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
 
-class Factory implements StreamFactoryInterface
+class StreamFactory implements StreamFactoryInterface
 {
     private ObjectManager $objectManager;
 

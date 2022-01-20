@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\Curl;
 
-use EasyTool\Framework\App\Http\Message\Request;
+use EasyTool\Framework\Http\Message\Request;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;

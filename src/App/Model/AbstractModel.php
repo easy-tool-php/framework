@@ -5,6 +5,8 @@ namespace EasyTool\Framework\App\Model;
 use EasyTool\Framework\App\Data\DataObject;
 use EasyTool\Framework\App\Database\Connection;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
+use EasyTool\Framework\App\Event\Event;
+use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\ObjectManager;
 use Exception;
 
@@ -15,12 +17,14 @@ abstract class AbstractModel extends DataObject
     public const CONN_NAME = DatabaseManager::DEFAULT_CONN;
 
     protected Connection $conn;
+    protected EventManager $eventManager;
 
     protected array $orgData = [];
 
-    public function __construct(ObjectManager $objectManager)
+    public function __construct(EventManager $eventManager)
     {
         $this->conn = Connection::createInstance(static::MAIN_TABLE, static::CONN_NAME);
+        $this->eventManager = $eventManager;
     }
 
     /**
@@ -31,6 +35,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function beforeSave(): self
     {
+        $this->eventManager->dispatch(new Event('before_model_save'));
         return $this;
     }
 
@@ -42,6 +47,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function afterSave(): self
     {
+        $this->eventManager->dispatch(new Event('after_model_save'));
         return $this;
     }
 
@@ -50,6 +56,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function beforeDelete(): self
     {
+        $this->eventManager->dispatch(new Event('before_model_delete'));
         return $this;
     }
 
@@ -58,6 +65,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function afterDelete(): self
     {
+        $this->eventManager->dispatch(new Event('after_model_delete'));
         return $this;
     }
 
@@ -66,14 +74,16 @@ abstract class AbstractModel extends DataObject
      */
     protected function beforeLoad(): self
     {
+        $this->eventManager->dispatch(new Event('before_model_load'));
         return $this;
     }
 
     /**
      * Do something after loaded
      */
-    protected function afterLoad(): self
+    protected function afterLoad()
     {
+        $this->eventManager->dispatch(new Event('after_model_load'));
         return $this;
     }
 
@@ -87,9 +97,10 @@ abstract class AbstractModel extends DataObject
             $this->beforeSave();
             $this->getId()
                 ? $this->conn->update([static::PRIMARY_KEY => $this->data[static::PRIMARY_KEY]], $this->getData())
-                : $this->set(static::PRIMARY_KEY, $this->conn->insert($this->getData()));
-            $this->afterSave();
+                : $this->conn->insert($this->getData());
             $this->conn->commit();
+            $this->set(static::PRIMARY_KEY, $this->conn->getLastGeneratedValue());
+            $this->afterSave();
         } catch (PDOException $e) {
             $this->conn->rollback();
             throw $e;
@@ -106,7 +117,8 @@ abstract class AbstractModel extends DataObject
     {
         $this->beforeDelete();
         $this->conn->delete([static::PRIMARY_KEY => $this->data[static::PRIMARY_KEY]]);
-        return $this->afterDelete();
+        $this->afterDelete();
+        return $this;
     }
 
     /**
@@ -120,7 +132,8 @@ abstract class AbstractModel extends DataObject
         $this->beforeLoad();
         $this->conn->getSelect()->where([static::PRIMARY_KEY => $this->data[static::PRIMARY_KEY]]);
         $this->orgData = $this->data = $this->conn->fetchRow();
-        return $this->afterLoad();
+        $this->afterLoad();
+        return $this;
     }
 
     /**

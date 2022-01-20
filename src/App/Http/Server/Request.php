@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\App\Http\Server;
 
-use EasyTool\Framework\App\Http\Message\Request as HttpRequest;
+use EasyTool\Framework\Http\Message\Request as HttpRequest;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;

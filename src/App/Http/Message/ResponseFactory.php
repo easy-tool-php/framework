@@ -1,12 +1,12 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message\Response;
+namespace EasyTool\Framework\App\Http\Message;
 
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 
-class Factory implements ResponseFactoryInterface
+class ResponseFactory implements ResponseFactoryInterface
 {
     private ObjectManager $objectManager;
 

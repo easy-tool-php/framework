@@ -1,8 +1,8 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message;
+namespace EasyTool\Framework\Http\Message;
 
-use EasyTool\Framework\App\Http\Message;
+use EasyTool\Framework\Http\Message;
 use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;

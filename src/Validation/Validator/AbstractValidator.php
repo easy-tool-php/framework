@@ -18,11 +18,11 @@ abstract class AbstractValidator
             if ($section == '*') {
                 if (is_array($data)) {
                     foreach ($data as $child) {
-                        $values = array_merge($values, $this->getMatchedChildren($childPath, $child));
+                        $values = array_merge($values, $this->getMatchedValues($childPath, $child));
                     }
                 }
             } elseif (isset($data[$section])) {
-                $values = array_merge($values, $this->getMatchedChildren($childPath, $data[$section]));
+                $values = array_merge($values, $this->getMatchedValues($childPath, $data[$section]));
             }
             return $values;
         }

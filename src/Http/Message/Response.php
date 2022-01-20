@@ -1,8 +1,8 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message;
+namespace EasyTool\Framework\Http\Message;
 
-use EasyTool\Framework\App\Http\Message;
+use EasyTool\Framework\Http\Message;
 use Psr\Http\Message\ResponseInterface;
 
 class Response extends Message implements ResponseInterface

@@ -58,6 +58,14 @@ class Connection
     }
 
     /**
+     * Returns last generated value
+     */
+    public function getLastGeneratedValue(): int
+    {
+        return $this->conn->getLastGeneratedValue();
+    }
+
+    /**
      * Update a record with given data in specified table
      */
     public function update(array $where, array $data): self

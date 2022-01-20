@@ -1,12 +1,12 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message\Uri;
+namespace EasyTool\Framework\App\Http\Message;
 
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 
-class Factory implements UriFactoryInterface
+class UriFactory implements UriFactoryInterface
 {
     private ObjectManager $objectManager;
 

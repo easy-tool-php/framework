@@ -1,6 +1,6 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message;
+namespace EasyTool\Framework\Http\Message;
 
 use Psr\Http\Message\UriInterface;
 

@@ -7,6 +7,7 @@ use EasyTool\Framework\App\Http\Server\Response\Handler as ResponseHandler;
 use EasyTool\Framework\App\Logger;
 use Psr\Http\Message\ResponseFactoryInterface;
 use ReflectionClass;
+use Throwable;
 
 class Handler
 {
@@ -85,7 +86,7 @@ HTML;
     /**
      * Handle output of exception
      */
-    public function handle($exception): void
+    public function handle(Throwable $exception): void
     {
         $traces = $exception->getTrace();
         $totalSteps = count($traces);

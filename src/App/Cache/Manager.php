@@ -14,6 +14,7 @@ class Manager
     private Config $config;
     private ObjectManager $objectManager;
     private array $caches = [];
+    private array $status = [];
 
     public function __construct(
         Config $config,
@@ -21,6 +22,7 @@ class Manager
     ) {
         $this->config = $config;
         $this->objectManager = $objectManager;
+        $this->status = $this->config->get(null, self::CONFIG_NAME);
     }
 
     /**
@@ -38,21 +40,68 @@ class Manager
     }
 
     /**
+     * Get all caches
+     */
+    public function getAllCaches()
+    {
+        $status = $this->config->get(null, self::CONFIG_NAME);
+        foreach (array_keys($this->caches) as $cacheName) {
+            if (!isset($status[$cacheName])) {
+                $this->getCache($cacheName);
+            }
+        }
+        return $this->caches;
+    }
+
+    /**
      * Get cache by given name
      */
     public function getCache(string $name): Cache
     {
         if (!isset($this->caches[$name])) {
-            $status = $this->config->get(null, self::CONFIG_NAME);
+            if (!isset($this->status[$name])) {
+                $this->status[$name] = true;
+            }
             $this->caches[$name] = $this->objectManager->create(
                 Cache::class,
                 [
                     'adapter' => $this->getAdapterInstance($this->config->getEnv(self::CONFIG_ENV_PATH)),
                     'name' => $name,
-                    'isEnabled' => $status[$name] ?? true
+                    'isEnabled' => $this->status[$name]
                 ]
             );
         }
         return $this->caches[$name];
+    }
+
+    /**
+     * Enable specified cache
+     */
+    public function enable(string $name): self
+    {
+        if (!isset($this->status[$name]) && !isset($this->caches)) {
+            throw new InvalidArgumentException('Invalid cache name.');
+        }
+        $this->status[$name] = true;
+        return $this;
+    }
+
+    /**
+     * Disable specified cache
+     */
+    public function disable(string $name): self
+    {
+        if (!isset($this->status[$name]) && !isset($this->caches)) {
+            throw new InvalidArgumentException('Invalid cache name.');
+        }
+        $this->status[$name] = false;
+        return $this;
+    }
+
+    public function __destruct()
+    {
+        $this->config
+            ->set(null, $this->status, self::CONFIG_NAME)
+            ->save(self::CONFIG_NAME);
     }
 }

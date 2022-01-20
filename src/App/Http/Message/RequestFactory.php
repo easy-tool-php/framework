@@ -1,13 +1,13 @@
 <?php
 
-namespace EasyTool\Framework\App\Http\Message\Request;
+namespace EasyTool\Framework\App\Http\Message;
 
 use EasyTool\Framework\App\ObjectManager;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriFactoryInterface;
 
-class Factory implements RequestFactoryInterface
+class RequestFactory implements RequestFactoryInterface
 {
     private ObjectManager $objectManager;
     private UriFactoryInterface $uriFactory;

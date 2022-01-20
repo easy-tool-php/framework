@@ -69,11 +69,9 @@ class App
          */
         $this->area = $this->objectManager->get(Area::class);
         $this->databaseManager = $this->objectManager->get(DatabaseManager::class);
-        $this->eventManager = $this->objectManager->get(EventManager::class);
         $this->moduleManager = $this->objectManager->get(ModuleManager::class);
 
         $this->objectManager->initialize();
-        $this->eventManager->initialize();
         $this->databaseManager->initialize();
         $this->moduleManager->initialize($this->classLoader);
     }
