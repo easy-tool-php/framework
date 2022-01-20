@@ -2,8 +2,9 @@
 
 namespace EasyTool\Framework\App\Database;
 
+use DomainException;
 use EasyTool\Framework\App\Config;
-use EasyTool\Framework\App\Exception\DatabaseException;
+use EasyTool\Framework\App\Exception\ConfigException;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Validation\Validator;
 use Laminas\Db\Adapter\Adapter;
@@ -49,8 +50,8 @@ class Manager
             if (
                 !$this->validator->validate(
                     [
-                        self::DB_DRIVER => ['required', 'string', 'options' => [self::DRIVER_PDO_MYSQL]],
-                        self::DB_HOST => ['required', 'string'],
+                        self::DB_DRIVER   => ['required', 'string', 'options' => [self::DRIVER_PDO_MYSQL]],
+                        self::DB_HOST     => ['required', 'string'],
                         self::DB_DATABASE => ['required', 'string'],
                         self::DB_USERNAME => ['required', 'string'],
                         self::DB_PASSWORD => ['required', 'string']
@@ -58,7 +59,7 @@ class Manager
                     $config
                 )
             ) {
-                throw new DatabaseException('Invalid database config.');
+                throw new ConfigException('Invalid database config.');
             }
 
             /** @var Adapter $adapter */
@@ -72,7 +73,7 @@ class Manager
     public function getAdapter(string $name = self::DEFAULT_CONN): Adapter
     {
         if (!isset($this->adapters[$name])) {
-            throw new DatabaseException('Specified adapter does not exist.');
+            throw new DomainException(sprintf('Unexpected adapter: %s', $name));
         }
         return $this->adapters[$name];
     }

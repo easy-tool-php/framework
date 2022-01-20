@@ -1,6 +1,6 @@
 <?php
 
-namespace EasyTool\Framework\Curl;
+namespace EasyTool\Framework\Http\Client;
 
 use EasyTool\Framework\Http\Message\Request;
 use Psr\Http\Client\ClientInterface;
@@ -9,7 +9,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 
-class Client implements ClientInterface
+class Curl implements ClientInterface
 {
     private RequestFactoryInterface $requestFactory;
     private ResponseFactoryInterface $responseFactory;
@@ -35,13 +35,13 @@ class Client implements ClientInterface
         $data = (string)$request->getBody();
 
         $opts = [
-            CURLOPT_HEADER => 0,
+            CURLOPT_HEADER         => 0,
             CURLOPT_RETURNTRANSFER => 1,
             CURLOPT_SSL_VERIFYPEER => 0,
             CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_HTTP_VERSION => 1,
-            CURLOPT_URL => $url,
-            CURLOPT_HTTPHEADER => $headers
+            CURLOPT_HTTP_VERSION   => 1,
+            CURLOPT_URL            => $url,
+            CURLOPT_HTTPHEADER     => $headers
         ];
 
         switch ($request->getMethod()) {
@@ -72,7 +72,7 @@ class Client implements ClientInterface
 
         $ch = curl_init();
         curl_setopt_array($ch, $opts);
-        $response = curl_exec($ch);
+        $remoteResponse = curl_exec($ch);
         $error = curl_error($ch);
         curl_close($ch);
 
@@ -80,6 +80,7 @@ class Client implements ClientInterface
             throw new Exception\ClientException($error);
         }
 
-        return $this->responseFactory->createResponse();
+        $response = $this->responseFactory->createResponse();
+        return $response->withBody($response->getBody()->write($remoteResponse));
     }
 }

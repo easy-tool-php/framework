@@ -14,11 +14,17 @@ class Area
 
     private string $code = self::GLOBAL;
 
+    /**
+     * Get current area code
+     */
     public function getCode(): string
     {
         return $this->code;
     }
 
+    /**
+     * Set area code
+     */
     public function setCode(string $code): self
     {
         if (!in_array($code, [self::FRONTEND, self::BACKEND, self::API, self::CLI])) {

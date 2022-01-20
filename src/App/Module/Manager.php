@@ -8,6 +8,7 @@ use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Event\Manager as EventManager;
+use EasyTool\Framework\App\Exception\ConfigException;
 use EasyTool\Framework\App\Exception\ModuleException;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Filesystem\FileManager;
@@ -240,8 +241,10 @@ class Manager
             switch ($type) {
                 case self::CONFIG_TYPE_EVENTS:
                     if (!$this->eventManager->validateConfig($config)) {
-                        throw new ModuleException('Invalid event config of ' . $moduleConfig[self::MODULE_NAME]);
+                        throw new ConfigException('Invalid event config of ' . $moduleConfig[self::MODULE_NAME]);
                     }
+
+                // all types of config will be returned
                 default:
                     return $config;
             }

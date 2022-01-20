@@ -1,6 +1,6 @@
 <?php
 
-namespace EasyTool\Framework\Curl\Exception;
+namespace EasyTool\Framework\Http\Client\Exception;
 
 use Exception;
 use Psr\Http\Client\ClientExceptionInterface;
