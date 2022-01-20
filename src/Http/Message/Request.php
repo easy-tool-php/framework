@@ -56,7 +56,7 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
-    public function withMethod($method)
+    public function withMethod($method): self
     {
         if (!in_array($method, [self::METHOD_GET, self::METHOD_POST, self::METHOD_PUT, self::METHOD_DELETE])) {
             throw new InvalidArgumentException('Invalid request method.');
@@ -76,7 +76,7 @@ class Request extends Message implements RequestInterface
     /**
      * @inheritDoc
      */
-    public function withUri(UriInterface $uri, $preserveHost = false)
+    public function withUri(UriInterface $uri, $preserveHost = false): self
     {
         $this->uri = $uri;
         return $this;

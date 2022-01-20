@@ -28,7 +28,7 @@ class Stream implements StreamInterface
     /**
      * @inheritDoc
      */
-    public function close()
+    public function close(): void
     {
         fclose($this->resource);
     }
@@ -38,6 +38,7 @@ class Stream implements StreamInterface
      */
     public function detach()
     {
+        return $this->resource;
     }
 
     /**
