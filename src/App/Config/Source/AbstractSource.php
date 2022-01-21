@@ -15,7 +15,16 @@ abstract class AbstractSource
     }
 
     /**
+     * Update flag and do collecting
+     */
+    public function collect(): array
+    {
+        $this->collected = true;
+        return $this->doCollect();
+    }
+
+    /**
      * Collect config data from the source
      */
-    abstract public function collect(): array;
+    abstract protected function doCollect(): array;
 }

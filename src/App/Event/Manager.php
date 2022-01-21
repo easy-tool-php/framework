@@ -3,9 +3,8 @@
 namespace EasyTool\Framework\App\Event;
 
 use EasyTool\Framework\App\Config;
-use EasyTool\Framework\App\Exception\ConfigException;
+use EasyTool\Framework\App\Event\Config\Collector as ConfigCollector;
 use EasyTool\Framework\App\ObjectManager;
-use EasyTool\Framework\Validation\Validator;
 use Exception;
 use InvalidArgumentException;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -17,8 +16,8 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     public const CONFIG_NAME = 'events';
 
     private Config $config;
+    private ConfigCollector $configCollector;
     private ObjectManager $objectManager;
-    private Validator $validator;
 
     /**
      * listener array, format is like ['event_name' => [$listenerClassA, $listenerClassB, ...]]
@@ -27,12 +26,12 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
 
     public function __construct(
         Config $config,
-        ObjectManager $objectManager,
-        Validator $validator
+        ConfigCollector $configCollector,
+        ObjectManager $objectManager
     ) {
         $this->config = $config;
+        $this->configCollector = $configCollector;
         $this->objectManager = $objectManager;
-        $this->validator = $validator;
     }
 
     /**
@@ -40,29 +39,13 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
      */
     public function initialize(): void
     {
-        $config = $this->config->get(null, self::CONFIG_NAME);
-        if (!$this->validateConfig($config)) {
-            throw new ConfigException('Invalid event config.');
-        }
-        foreach ($config as $name => $listeners) {
+        //$this->configCollector->addSource()->collect();
+        $eventsConfig = $this->config->get('', self::CONFIG_NAME);
+        foreach ($eventsConfig as $name => $listeners) {
             foreach ($listeners as $listener) {
                 $this->addListener($name, $listener);
             }
         }
-    }
-
-    /**
-     * Check whether a listener config is valid
-     */
-    public function validateConfig($config): bool
-    {
-        return $this->validator->validate(
-            [
-                '*.*.listener' => ['required', 'string'],
-                '*.*.order'    => ['int']
-            ],
-            $config
-        );
     }
 
     /**
