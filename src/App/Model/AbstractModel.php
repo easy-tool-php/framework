@@ -35,7 +35,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function beforeSave(): self
     {
-        $this->eventManager->dispatch(new Event('before_model_save'));
+        $this->eventManager->dispatch((new Event('before_model_save'))->set('model', $this));
         return $this;
     }
 
@@ -47,7 +47,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function afterSave(): self
     {
-        $this->eventManager->dispatch(new Event('after_model_save'));
+        $this->eventManager->dispatch((new Event('after_model_save'))->set('model', $this));
         return $this;
     }
 
@@ -56,7 +56,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function beforeDelete(): self
     {
-        $this->eventManager->dispatch(new Event('before_model_delete'));
+        $this->eventManager->dispatch((new Event('before_model_delete'))->set('model', $this));
         return $this;
     }
 
@@ -65,7 +65,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function afterDelete(): self
     {
-        $this->eventManager->dispatch(new Event('after_model_delete'));
+        $this->eventManager->dispatch((new Event('after_model_delete'))->set('model', $this));
         return $this;
     }
 
@@ -74,7 +74,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function beforeLoad(): self
     {
-        $this->eventManager->dispatch(new Event('before_model_load'));
+        $this->eventManager->dispatch((new Event('before_model_load'))->set('model', $this));
         return $this;
     }
 
@@ -83,7 +83,7 @@ abstract class AbstractModel extends DataObject
      */
     protected function afterLoad()
     {
-        $this->eventManager->dispatch(new Event('after_model_load'));
+        $this->eventManager->dispatch((new Event('after_model_load'))->set('model', $this));
         return $this;
     }
 

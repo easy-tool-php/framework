@@ -3,6 +3,7 @@
 namespace EasyTool\Framework\App\Event;
 
 use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Exception\ConfigException;
 use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Validation\Validator;
 use Exception;
@@ -13,6 +14,8 @@ use ReflectionException;
 
 class Manager implements ListenerProviderInterface, EventDispatcherInterface
 {
+    public const CONFIG_NAME = 'events';
+
     private Config $config;
     private ObjectManager $objectManager;
     private Validator $validator;
@@ -33,9 +36,25 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     }
 
     /**
+     * Collect listeners from `app/config/events.php`
+     */
+    public function initialize(): void
+    {
+        $config = $this->config->get(null, self::CONFIG_NAME);
+        if (!$this->validateConfig($config)) {
+            throw new ConfigException('Invalid event config.');
+        }
+        foreach ($config as $name => $listeners) {
+            foreach ($listeners as $listener) {
+                $this->addListener($name, $listener);
+            }
+        }
+    }
+
+    /**
      * Check whether a listener config is valid
      */
-    public function validateConfig($config)
+    public function validateConfig($config): bool
     {
         return $this->validator->validate(
             [
@@ -56,7 +75,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
         if (!isset($this->listeners[$eventName])) {
             $this->listeners[$eventName] = [];
         }
-        $this->listeners[$eventName][] = $listener;
+        $this->listeners[$eventName][] = $listener['listener'];
         usort($this->listeners[$eventName], function ($a, $b) {
             if (isset($a['order']) && !isset($b['order'])) {
                 return 1;

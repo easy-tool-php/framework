@@ -7,10 +7,9 @@ use EasyTool\Framework\App;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\Manager as EventManager;
-use EasyTool\Framework\App\Exception\ConfigException;
 use EasyTool\Framework\App\Exception\ModuleException;
-use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Filesystem\FileManager;
 use EasyTool\Framework\Validation\Validator;
 
@@ -18,15 +17,9 @@ class Manager
 {
     public const CACHE_NAME = 'modules';
     public const CACHE_MODULES = 'modules';
-    public const CACHE_API = 'api';
-    public const CACHE_DI = 'di';
-    public const CACHE_EVENTS = 'events';
 
     public const CONFIG_NAME = 'modules';
     public const CONFIG_FILE = 'config/module.php';
-    public const CONFIG_TYPE_API = 'api';
-    public const CONFIG_TYPE_DI = 'di';
-    public const CONFIG_TYPE_EVENTS = 'events';
 
     public const ENABLED = 'enabled';
     public const DISABLED = 'disabled';
@@ -36,21 +29,15 @@ class Manager
     public const MODULE_DIR = 'directory';
     public const MODULE_DEPENDS = 'depends';
     public const MODULE_ROUTE = 'route';
-    public const MODULE_DI = 'di';
-    public const MODULE_EVENTS = 'events';
 
     private App $app;
     private CacheManager $cacheManager;
     private Config $config;
     private EventManager $eventManager;
     private FileManager $fileManager;
-    private ObjectManager $objectManager;
     private Validator $validator;
 
     private array $moduleStatus = [];
-    private array $apiRoutes = [];
-    private array $eventListeners = [];
-    private array $classAliases = [];
 
     private array $modules = [
         self::ENABLED  => [],
@@ -63,7 +50,6 @@ class Manager
         Config $config,
         EventManager $eventManager,
         FileManager $fileManager,
-        ObjectManager $objectManager,
         Validator $validator
     ) {
         $this->app = $app;
@@ -71,81 +57,42 @@ class Manager
         $this->config = $config;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
-        $this->objectManager = $objectManager;
         $this->validator = $validator;
     }
 
     /**
-     * Collect config data from `app/config/modules.php` and initialize modules.
-     * This method may be executed on upgrading.
+     * Check whether given folder is a module directory
      */
-    public function initialize(ClassLoader $classLoader): void
+    private function checkModuleConfig(string $directory): ?array
     {
-        /**
-         * Collect all necessary data from cache in order to save memory and improve performance.
-         *     Skip this step if the cache is disabled or empty.
-         */
-        $cache = $this->cacheManager->getCache(self::CACHE_NAME);
-        if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
-            $this->modules = $cachedModules;
-            $this->apiRoutes = $cache->get(self::CACHE_API);
-            $this->classAliases = $cache->get(self::CACHE_DI);
-            $this->eventListeners = $cache->get(self::CACHE_EVENTS);
-            $this->prepareForApp();
-            return;
-        }
-
-        /**
-         * Developer is able to enable/disable a module through editing `app/config/modules.php`.
-         *     Modules which do not exist in the config file will be added after initializing.
-         */
-        $this->modules = [self::ENABLED => [], self::DISABLED => []];
-        $this->apiRoutes = $this->classAliases = $this->eventListeners = [];
-        $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
-
-        foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
-            foreach ($directoryGroup as $directory) {
-                if (($moduleConfig = $this->checkModuleConfig($directory))) {
-                    $this->collectModule($moduleConfig, $namespace, $directory);
-                }
-            }
-        }
-
-        $dir = $this->app->getDirectoryPath(App::DIR_MODULES);
-        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
-            $directory = $dir . '/' . $moduleDir;
-            if (($moduleConfig = $this->checkModuleConfig($directory))) {
-                $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
-            }
-        }
-
-        $this->checkDependency();
-        usort($this->modules[self::ENABLED], [$this, 'sortModules']);
-        foreach ($this->modules[self::ENABLED] as $module) {
-            $this->initModule($module);
-        }
-        $this->prepareForApp();
-
-        $cache->set(self::CACHE_MODULES, $this->modules);
-        $cache->set(self::CACHE_API, $this->apiRoutes);
-        $cache->set(self::CACHE_DI, $this->classAliases);
-        $cache->set(self::CACHE_EVENTS, $this->eventListeners);
-        $cache->save();
-
-        $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
+        return (is_file(($configFile = $directory . '/' . self::CONFIG_FILE))
+            && is_array(($config = require $configFile))
+            && $this->validator->validate(
+                [
+                    self::MODULE_NAME    => ['required'],
+                    self::MODULE_DEPENDS => ['array'],
+                    self::MODULE_ROUTE   => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
+                ],
+                $config
+            ))
+            ? $config : null;
     }
 
     /**
-     * Prepare for running the application after collecting module config
+     * Collect module
      */
-    private function prepareForApp()
+    private function collectModule(array $config, $namespace, $directory): void
     {
-        foreach ($this->eventListeners as $name => $listeners) {
-            foreach ($listeners as $listener) {
-                $this->eventManager->addListener($name, $listener);
-            }
+        $config[self::MODULE_DIR] = $directory;
+        $config[self::MODULE_NAMESPACE] = $namespace;
+        if (!isset($this->moduleStatus[$config[self::MODULE_NAME]])) {
+            $this->moduleStatus[$config[self::MODULE_NAME]] = true;
         }
-        $this->objectManager->collectClassAliases($this->classAliases);
+        if ($this->moduleStatus[$config[self::MODULE_NAME]]) {
+            $this->modules[self::ENABLED][$config[self::MODULE_NAME]] = $config;
+        } else {
+            $this->modules[self::DISABLED][$config[self::MODULE_NAME]] = $config;
+        }
     }
 
     /**
@@ -193,90 +140,67 @@ class Manager
     }
 
     /**
-     * Check whether given folder is a module directory
-     */
-    private function checkModuleConfig(string $directory): ?array
-    {
-        return (is_file(($configFile = $directory . '/' . self::CONFIG_FILE))
-            && is_array(($config = require $configFile))
-            && $this->validator->validate(
-                [
-                    self::MODULE_NAME    => ['required'],
-                    self::MODULE_DEPENDS => ['array'],
-                    self::MODULE_ROUTE   => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]],
-                    self::MODULE_DI      => ['array'],
-                    self::MODULE_EVENTS  => ['array']
-                ],
-                $config
-            ))
-            ? $config : null;
-    }
-
-    /**
-     * Collect module
-     */
-    private function collectModule(array $config, $namespace, $directory): void
-    {
-        $config[self::MODULE_DIR] = $directory;
-        $config[self::MODULE_NAMESPACE] = $namespace;
-        if (!isset($this->moduleStatus[$config[self::MODULE_NAME]])) {
-            $this->moduleStatus[$config[self::MODULE_NAME]] = true;
-        }
-        if ($this->moduleStatus[$config[self::MODULE_NAME]]) {
-            $this->modules[self::ENABLED][$config[self::MODULE_NAME]] = $config;
-        } else {
-            $this->modules[self::DISABLED][$config[self::MODULE_NAME]] = $config;
-        }
-    }
-
-    /**
-     * Get config data of specified type
-     */
-    private function getConfig(array $moduleConfig, string $type): array
-    {
-        if (
-            is_file(($configFile = $moduleConfig[self::MODULE_DIR] . '/config/' . $type . '.php'))
-            && is_array(($config = require $configFile))
-        ) {
-            switch ($type) {
-                case self::CONFIG_TYPE_EVENTS:
-                    if (!$this->eventManager->validateConfig($config)) {
-                        throw new ConfigException('Invalid event config of ' . $moduleConfig[self::MODULE_NAME]);
-                    }
-
-                // all types of config will be returned
-                default:
-                    return $config;
-            }
-        }
-        return [];
-    }
-
-    /**
      * Initialize each module
      */
     private function initModule(array $moduleConfig): void
     {
-        $this->apiRoutes = array_merge(
-            $this->apiRoutes,
-            $this->getConfig($moduleConfig, self::CONFIG_TYPE_API)
-        );
-        $this->classAliases = array_merge(
-            $this->classAliases,
-            $this->getConfig($moduleConfig, self::CONFIG_TYPE_DI)
-        );
-        $this->eventListeners = array_merge_recursive(
-            $this->eventListeners,
-            $this->getConfig($moduleConfig, self::CONFIG_TYPE_EVENTS)
-        );
     }
 
     /**
-     * Get all API routes
+     * Collect config data from `app/config/modules.php` and initialize modules.
+     * This method may be executed on upgrading.
      */
-    public function getApiRoutes(): array
+    public function initialize(ClassLoader $classLoader): void
     {
-        return $this->apiRoutes;
+        /**
+         * Collect all necessary data from cache in order to save memory and improve performance.
+         *     Skip this step if the cache is disabled or empty.
+         */
+        $cache = $this->cacheManager->getCache(self::CACHE_NAME);
+        if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
+            $this->modules = $cachedModules;
+        } else {
+            /**
+             * Developer is able to enable/disable a module through editing `app/config/modules.php`.
+             *     Modules which do not exist in the config file will be added after initializing.
+             */
+            $this->modules = [self::ENABLED => [], self::DISABLED => []];
+            $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
+
+            /**
+             * Collect modules built by 3rd party from `vendor` folder
+             */
+            foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
+                foreach ($directoryGroup as $directory) {
+                    if (($moduleConfig = $this->checkModuleConfig($directory))) {
+                        $this->collectModule($moduleConfig, $namespace, $directory);
+                    }
+                }
+            }
+
+            /**
+             * Collect local customized modules from `app/modules` folder
+             */
+            $dir = $this->app->getDirectoryPath(App::DIR_MODULES);
+            foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
+                $directory = $dir . '/' . $moduleDir;
+                if (($moduleConfig = $this->checkModuleConfig($directory))) {
+                    $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
+                }
+            }
+
+            $this->checkDependency();
+            usort($this->modules[self::ENABLED], [$this, 'sortModules']);
+            foreach ($this->modules[self::ENABLED] as $module) {
+                $this->initModule($module);
+            }
+            $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
+
+            $cache->set(self::CACHE_MODULES, $this->modules);
+            $cache->save();
+        }
+
+        $this->eventManager->dispatch((new Event('after_modules_init'))->set('modules', $this->modules[self::ENABLED]));
     }
 
     /**
