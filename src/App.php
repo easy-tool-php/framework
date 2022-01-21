@@ -4,6 +4,8 @@ namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
+use EasyTool\Framework\App\Config\Env\Collector as EnvConfigCollector;
+use EasyTool\Framework\App\Config\Source\File;
 use EasyTool\Framework\App\Database\Manager as DatabaseManager;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\FileException;
@@ -71,6 +73,13 @@ class App
         $this->eventManager = $this->objectManager->get(EventManager::class);
         $this->databaseManager = $this->objectManager->get(DatabaseManager::class);
         $this->moduleManager = $this->objectManager->get(ModuleManager::class);
+
+        /** @var EnvConfigCollector $configCollector */
+        $configCollector = $this->objectManager->get(EnvConfigCollector::class);
+        $configCollector->addSource(
+            File::createInstance()->setDirectory($this->getDirectoryPath(App::DIR_CONFIG))
+        );
+        $configCollector->collect();
 
         $this->objectManager->initialize();
         $this->eventManager->initialize();

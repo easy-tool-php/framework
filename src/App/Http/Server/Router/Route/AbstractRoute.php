@@ -11,8 +11,6 @@ use Psr\Http\Message\ServerRequestInterface;
 
 abstract class AbstractRoute
 {
-    public const CONFIG_NAME = 'env';
-
     protected Config $config;
     protected ModuleManager $moduleManager;
     protected ObjectManager $objectManager;

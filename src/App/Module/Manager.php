@@ -194,7 +194,7 @@ class Manager
             foreach ($this->modules[self::ENABLED] as $module) {
                 $this->initModule($module);
             }
-            $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME)->save(self::CONFIG_NAME);
+            $this->config->set(null, $this->moduleStatus, self::CONFIG_NAME);
 
             $cache->set(self::CACHE_MODULES, $this->modules);
             $cache->save();

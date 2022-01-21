@@ -97,11 +97,4 @@ class Manager
         $this->status[$name] = false;
         return $this;
     }
-
-    public function __destruct()
-    {
-        $this->config
-            ->set(null, $this->status, self::CONFIG_NAME)
-            ->save(self::CONFIG_NAME);
-    }
 }

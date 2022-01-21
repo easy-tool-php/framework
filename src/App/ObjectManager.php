@@ -2,7 +2,10 @@
 
 namespace EasyTool\Framework\App;
 
+use EasyTool\Framework\App;
+use EasyTool\Framework\App\Config\Source\File;
 use EasyTool\Framework\App\Exception\ClassException;
+use EasyTool\Framework\App\ObjectManager\Config\Collector as ConfigCollector;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionParameter;
@@ -39,6 +42,16 @@ class ObjectManager
      */
     public function initialize(): void
     {
+        /** @var App $app */
+        $app = $this->get(App::class);
+
+        /** @var ConfigCollector $configCollector */
+        $configCollector = $this->get(ConfigCollector::class);
+        $configCollector->addSource(
+            File::createInstance()->setDirectory($app->getDirectoryPath(App::DIR_CONFIG))
+        );
+        $configCollector->collect();
+
         /** @var Config $config */
         $config = $this->get(Config::class);
         $classAliases = $config->get(null, self::CONFIG_NAME);

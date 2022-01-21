@@ -2,6 +2,8 @@
 
 namespace EasyTool\Framework\App\Data;
 
+use InvalidArgumentException;
+
 trait MultiLevelsStructure
 {
     /**
@@ -13,7 +15,7 @@ trait MultiLevelsStructure
         $section = array_shift($tmp);
         $currentPath .= '/' . $section;
         if (!isset($data[$section])) {
-            throw new Exception(sprintf('Path `%s` does not exist.', $currentPath));
+            throw new InvalidArgumentException(sprintf('Path `%s` does not exist.', $currentPath));
         }
         return isset($tmp[0])
             ? $this->getChildByPath($tmp, $data[$section], $currentPath)

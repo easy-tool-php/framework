@@ -2,16 +2,39 @@
 
 namespace EasyTool\Framework\App\Config\Source;
 
+/**
+ * @method self createInstance()
+ */
 class File extends AbstractSource
 {
-    private string $filename;
+    private string $directory;
+    private ?string $file = null;
 
     /**
-     * Set source filename
+     * Get absolute filepath of the config file
      */
-    public function setFilename(string $filename): self
+    private function getFilepath(): string
     {
-        $this->filename = $filename;
+        return $this->file
+            ? ($this->directory . '/' . $this->file)
+            : ($this->directory . '/' . $this->collector->getNamespace() . '.php');
+    }
+
+    /**
+     * Set source directory
+     */
+    public function setDirectory(string $directory): self
+    {
+        $this->directory = $directory;
+        return $this;
+    }
+
+    /**
+     * Set source directory
+     */
+    public function setFile(string $file): self
+    {
+        $this->file = $file;
         return $this;
     }
 
@@ -20,6 +43,7 @@ class File extends AbstractSource
      */
     protected function doCollect(): array
     {
-        return (is_file($this->filename) && is_array(($config = require $this->filename))) ? $config : [];
+        $filename = $this->getFilepath();
+        return (is_file($filename) && is_array(($config = require $filename))) ? $config : [];
     }
 }

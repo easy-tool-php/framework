@@ -27,7 +27,7 @@ abstract class AbstractCollector
      */
     public function addSource(AbstractSource $source): self
     {
-        $this->sources[] = $source;
+        $this->sources[] = $source->setCollector($this);
         return $this;
     }
 
@@ -51,6 +51,14 @@ abstract class AbstractCollector
             );
         }
         return $this;
+    }
+
+    /**
+     * Returns namespace of the collector
+     */
+    public function getNamespace(): string
+    {
+        return $this->namespace;
     }
 
     /**

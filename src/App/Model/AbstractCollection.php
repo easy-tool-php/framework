@@ -13,19 +13,18 @@ use Laminas\Db\Sql\TableIdentifier;
 use ReflectionClass;
 
 /**
- * @method from(string|array|TableIdentifier $table)
- * @method quantifier(string|Expression $quantifier)
- * @method columns(array $columns, bool $prefixColumnsWithTable = true)
- * @method join($name, $on, $columns = Select::SQL_STAR, $type = Select::JOIN_INNER)
- * @method where($predicate, $combination = PredicateSet::OP_AND)
- * @method group($group)
- * @method having($predicate, $combination = PredicateSet::OP_AND)
- * @method order(string|array|Expression $order)
- * @method limit(int $limit)
- * @method offset(int $offset)
- * @method combine(Select $select, $type = Select::COMBINE_UNION, $modifier = '')
- * @method reset(string $part)
- * @method setSpecification(string $index, string|array $specification)
+ * @method self from(string|array|TableIdentifier $table)
+ * @method self quantifier(string|Expression $quantifier)
+ * @method self columns(array $columns, bool $prefixColumnsWithTable = true)
+ * @method self join($name, $on, $columns = Select::SQL_STAR, $type = Select::JOIN_INNER)
+ * @method self where($predicate, $combination = PredicateSet::OP_AND)
+ * @method self group($group)
+ * @method self having($predicate, $combination = PredicateSet::OP_AND)
+ * @method self order(string|array|Expression $order)
+ * @method self limit(int $limit)
+ * @method self offset(int $offset)
+ * @method self combine(Select $select, $type = Select::COMBINE_UNION, $modifier = '')
+ * @method self reset(string $part)
  *
  * @see \Laminas\Db\Sql\Select
  */

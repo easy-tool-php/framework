@@ -2,14 +2,14 @@
 
 namespace EasyTool\Framework\App\Http\Server\Router\Route;
 
+use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Http\Server\Request;
 use Psr\Http\Message\ServerRequestInterface;
 
 class Api extends AbstractRoute
 {
+    public const CONFIG_NAME = 'api';
     public const CONFIG_PATH = 'api/route';
-
-    private array $routes = [];
 
     /**
      * Check whether a given string matches variable part format
@@ -20,25 +20,18 @@ class Api extends AbstractRoute
     }
 
     /**
-     * Add routes
-     */
-    public function addRoutes(array $routes): void
-    {
-        $this->routes = array_merge($this->routes, $routes);
-    }
-
-    /**
      * Check whether the request path matches an API route
      */
     public function match(ServerRequestInterface $request): bool
     {
         [$prefix, $path] = array_pad(explode('/', trim($request->getUri()->getPath(), '/'), 2), 2, null);
-        if ($prefix != $this->config->get(self::CONFIG_PATH, self::CONFIG_NAME)) {
+        if ($prefix != $this->config->get(self::CONFIG_PATH, Config::ENV)) {
             return false;
         }
 
         $arrPath = explode('/', trim($path, '/'));
-        foreach ($this->routes as $route => $action) {
+        $routes = $this->config->get(null, self::CONFIG_NAME);
+        foreach ($routes as $route => $action) {
             [$method, $apiPath] = explode(':', $route, 2);
             if ($method != $request->getMethod()) {
                 continue;

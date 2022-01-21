@@ -9,6 +9,9 @@ class Collector extends AbstractCollector
 {
     protected string $namespace = EventManager::CONFIG_NAME;
 
+    /**
+     * @inheritDoc
+     */
     public function validate(array $config): bool
     {
         return $this->validator->validate(
