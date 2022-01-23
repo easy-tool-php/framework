@@ -28,7 +28,6 @@ class App
     private ClassLoader $classLoader;
     private DiContainer $diContainer;
     private ModuleManager $moduleManager;
-
     private string $dirRoot;
 
     public function __construct(
@@ -41,6 +40,7 @@ class App
         $this->area = $area;
         $this->classLoader = $classLoader;
         $this->diContainer = $diContainer;
+        $this->dirRoot = $dirRoot;
 
         $directory->setRoot($dirRoot);
     }

@@ -7,5 +7,5 @@ use EasyTool\Framework\App\Di\Container;
  */
 function singleton($class)
 {
-    Container::getInstance()->get($class);
+    return Container::getInstance()->get($class);
 }

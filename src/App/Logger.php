@@ -2,21 +2,21 @@
 
 namespace EasyTool\Framework\App;
 
-use EasyTool\Framework\App;
+use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\Filesystem\FileManager;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
 
 class Logger extends AbstractLogger
 {
-    private App $app;
+    private Directory $directory;
     private FileManager $fileManager;
 
     public function __construct(
-        App $app,
+        Directory $directory,
         FileManager $fileManager
     ) {
-        $this->app = $app;
+        $this->directory = $directory;
         $this->fileManager = $fileManager;
     }
 
@@ -40,7 +40,7 @@ class Logger extends AbstractLogger
                 break;
         }
 
-        if (!is_dir(($dir = $this->app->getDirectoryPath(App::DIR_LOG)))) {
+        if (!is_dir(($dir = $this->directory->getDirectoryPath(Directory::LOG)))) {
             mkdir($dir, 0755, true);
         }
 

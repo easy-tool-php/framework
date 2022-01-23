@@ -3,7 +3,6 @@
 namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
-use EasyTool\Framework\App;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Event\Event;
@@ -181,7 +180,7 @@ class Manager
             /**
              * Collect local customized modules from `app/modules` folder
              */
-            $dir = $this->directory->getDirectoryPath(App::DIR_MODULES);
+            $dir = $this->directory->getDirectoryPath(Directory::MODULES);
             foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
                 $directory = $dir . '/' . $moduleDir;
                 if (($moduleConfig = $this->checkModuleConfig($directory))) {

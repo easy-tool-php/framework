@@ -2,14 +2,14 @@
 
 namespace EasyTool\Framework\App\Setup;
 
-use EasyTool\Framework\App;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Database\Connection;
 use EasyTool\Framework\App\Database\Manager as DbManager;
 use EasyTool\Framework\App\Database\Setup as DbSetup;
+use EasyTool\Framework\App\Di\Container as DiContainer;
+use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\Module\Setup\AbstractSetup;
-use EasyTool\Framework\App\Di\Container as DiContainer;
 use Laminas\Code\Scanner\DirectoryScanner;
 use ReflectionClass;
 
@@ -17,25 +17,25 @@ class Upgrade
 {
     public const DB_TABLE = 'executed_setups';
 
-    private App $app;
     private CacheManager $cacheManager;
     private DbManager $dbManager;
-    private DbSetup $databaseSetup;
+    private DbSetup $dbSetup;
+    private Directory $directory;
     private ModuleManager $moduleManager;
     private DiContainer $diContainer;
 
     public function __construct(
-        App $app,
         CacheManager $cacheManager,
         DbManager $dbManager,
-        DbSetup $databaseSetup,
+        DbSetup $dbSetup,
+        Directory $directory,
         ModuleManager $moduleManager,
         DiContainer $diContainer
     ) {
-        $this->app = $app;
         $this->cacheManager = $cacheManager;
         $this->dbManager = $dbManager;
-        $this->databaseSetup = $databaseSetup;
+        $this->dbSetup = $dbSetup;
+        $this->directory = $directory;
         $this->moduleManager = $moduleManager;
         $this->diContainer = $diContainer;
     }
@@ -48,8 +48,8 @@ class Upgrade
      */
     private function checkSetupTable()
     {
-        if (!$this->databaseSetup->isTableExist(self::DB_TABLE)) {
-            $this->databaseSetup->createTable(self::DB_TABLE, [
+        if (!$this->dbSetup->isTableExist(self::DB_TABLE)) {
+            $this->dbSetup->createTable(self::DB_TABLE, [
                 [
                     DbSetup::COL_NAME     => 'class',
                     DbSetup::COL_TYPE     => DbSetup::COL_TYPE_VARCHAR,

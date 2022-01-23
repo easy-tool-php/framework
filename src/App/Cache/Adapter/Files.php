@@ -2,17 +2,17 @@
 
 namespace EasyTool\Framework\App\Cache\Adapter;
 
-use EasyTool\Framework\App;
+use EasyTool\Framework\App\Filesystem\Directory;
 
 class Files implements AdapterInterface
 {
     public const CODE = 'files';
 
-    private App $app;
+    private Directory $directory;
 
-    public function __construct(App $app)
+    public function __construct(Directory $directory)
     {
-        $this->app = $app;
+        $this->directory = $directory;
     }
 
     /**
@@ -20,7 +20,7 @@ class Files implements AdapterInterface
      */
     public function load(string $cacheName): array
     {
-        $filename = $this->app->getDirectoryPath(App::DIR_CACHE) . '/' . $cacheName;
+        $filename = $this->directory->getDirectoryPath(Directory::CACHE) . '/' . $cacheName;
         return is_file($filename) ? json_decode(file_get_contents($filename), true) : [];
     }
 
@@ -29,7 +29,7 @@ class Files implements AdapterInterface
      */
     public function save(string $cacheName, array $data): void
     {
-        if (!is_dir(($dir = $this->app->getDirectoryPath(App::DIR_CACHE)))) {
+        if (!is_dir(($dir = $this->directory->getDirectoryPath(Directory::CACHE)))) {
             mkdir($dir, 0644, true);
         }
         file_put_contents($dir . '/' . $cacheName, json_encode($data));
