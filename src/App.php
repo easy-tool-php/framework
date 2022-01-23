@@ -4,15 +4,14 @@ namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
-use EasyTool\Framework\App\Config\Env\Collector as EnvConfigCollector;
-use EasyTool\Framework\App\Config\Source\File;
-use EasyTool\Framework\App\Database\Manager as DatabaseManager;
+use EasyTool\Framework\App\Config\Collector as ConfigCollector;
+use EasyTool\Framework\App\Database\Manager as DbManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\App\Event\Manager as EventManager;
-use EasyTool\Framework\App\Exception\FileException;
 use EasyTool\Framework\App\Exception\Handler as ExceptionHandler;
+use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\App\Http\Server\Response\Handler as HttpResponseHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
-use EasyTool\Framework\App\ObjectManager;
 use Laminas\Code\Scanner\DirectoryScanner;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -25,33 +24,25 @@ class App
     public const FRAMEWORK_NAME = 'EasyTool';
     public const PACKAGE_NAME = 'easy-tool/framework';
 
-    public const DIR_APP = 'app';
-    public const DIR_CACHE = 'cache';
-    public const DIR_CONFIG = 'config';
-    public const DIR_LOG = 'log';
-    public const DIR_MODULES = 'app/modules';
-    public const DIR_PUB = 'pub';
-    public const DIR_ROOT = 'root';
-    public const DIR_TMP = 'tmp';
-    public const DIR_VAR = 'var';
-
     private Area $area;
-    private DatabaseManager $databaseManager;
-    private EventManager $eventManager;
-    private ModuleManager $moduleManager;
-    private ObjectManager $objectManager;
     private ClassLoader $classLoader;
+    private DiContainer $diContainer;
+    private ModuleManager $moduleManager;
 
-    private string $directoryRoot;
+    private string $dirRoot;
 
     public function __construct(
+        Area $area,
         ClassLoader $classLoader,
-        ObjectManager $objectManager,
-        string $directoryRoot
+        DiContainer $diContainer,
+        Directory $directory,
+        string $dirRoot
     ) {
+        $this->area = $area;
         $this->classLoader = $classLoader;
-        $this->directoryRoot = $directoryRoot;
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
+
+        $directory->setRoot($dirRoot);
     }
 
     /**
@@ -65,26 +56,16 @@ class App
          */
         ini_set('date.timezone', 'UTC');
 
-        /**
-         * Getting below singletons here instead of through dependency injection
-         *     in order to avoid dead loop.
-         */
-        $this->area = $this->objectManager->get(Area::class);
-        $this->eventManager = $this->objectManager->get(EventManager::class);
-        $this->databaseManager = $this->objectManager->get(DatabaseManager::class);
-        $this->moduleManager = $this->objectManager->get(ModuleManager::class);
+        /** @var ConfigCollector $configCollector */
+        $configCollector = $this->diContainer->get(ConfigCollector::class);
+        $dbManager = $this->diContainer->get(DbManager::class);
+        $eventManager = $this->diContainer->get(EventManager::class);
+        $this->moduleManager = $this->diContainer->get(ModuleManager::class);
 
-        /** @var EnvConfigCollector $configCollector */
-        $configCollector = $this->objectManager->get(EnvConfigCollector::class);
-        $configCollector->addSource(
-            File::createInstance()->setDirectory($this->getDirectoryPath(App::DIR_CONFIG))
-        );
         $configCollector->collect();
-
-        $this->objectManager->initialize();
-        $this->eventManager->initialize();
-        $this->databaseManager->initialize();
-        $this->moduleManager->initialize($this->classLoader);
+        //$this->eventManager->initialize();
+        //$this->dbManager->initialize();
+        //$this->moduleManager->initialize($this->classLoader);
     }
 
     /**
@@ -96,52 +77,11 @@ class App
     }
 
     /**
-     * Get absolute path of directory with specified type,
-     *     the types are defined as static variables of this class.
-     *
-     * @throws FileException
-     */
-    public function getDirectoryPath(string $type): string
-    {
-        switch ($type) {
-            case self::DIR_ROOT:
-                return $this->directoryRoot . '/';
-
-            case self::DIR_APP:
-                return $this->directoryRoot . '/app';
-
-            case self::DIR_CONFIG:
-                return $this->directoryRoot . '/app/config';
-
-            case self::DIR_MODULES:
-                return $this->directoryRoot . '/app/modules';
-
-            case self::DIR_PUB:
-                return $this->directoryRoot . '/pub';
-
-            case self::DIR_VAR:
-                return $this->directoryRoot . '/var';
-
-            case self::DIR_CACHE:
-                return $this->directoryRoot . '/var/cache';
-
-            case self::DIR_LOG:
-                return $this->directoryRoot . '/var/log';
-
-            case self::DIR_TMP:
-                return $this->directoryRoot . '/var/tmp';
-
-            default:
-                throw new FileException('Directory type is not supported.');
-        }
-    }
-
-    /**
      * Return current version of the framework
      */
     public function getVersion(): ?string
     {
-        $composerConfig = json_decode(file_get_contents($this->directoryRoot . '/composer.lock'), true);
+        $composerConfig = json_decode(file_get_contents($this->dirRoot . '/composer.lock'), true);
         foreach ($composerConfig['packages'] as $package) {
             if ($package['name'] == self::PACKAGE_NAME) {
                 return $package['extra']['branch-alias'][$package['version']] ?? $package['version'];
@@ -165,11 +105,11 @@ class App
 
         /** @var ConsoleApplication $consoleApplication */
         /** @var DirectoryScanner $scanner */
-        $consoleApplication = $this->objectManager->get(
+        $consoleApplication = $this->diContainer->create(
             ConsoleApplication::class,
             ['name' => self::FRAMEWORK_NAME, 'version' => $this->getVersion()]
         );
-        $scanner = $this->objectManager->get(DirectoryScanner::class);
+        $scanner = $this->diContainer->get(DirectoryScanner::class);
         $scanner->addDirectory(__DIR__ . '/App/Command');
         foreach ($this->moduleManager->getEnabledModules() as $module) {
             if (is_dir(($directory = $module[ModuleManager::MODULE_DIR] . '/Command'))) {
@@ -179,7 +119,7 @@ class App
         foreach ($scanner->getClassNames() as $className) {
             $reflectionClass = new ReflectionClass($className);
             if ($reflectionClass->isSubclassOf(Command::class)) {
-                $consoleApplication->add($this->objectManager->create($className));
+                $consoleApplication->add($this->diContainer->create($className));
             }
         }
         $consoleApplication->run();
@@ -194,14 +134,14 @@ class App
     public function handleHttp(): void
     {
         $this->initialize();
-        set_exception_handler([$this->objectManager->get(ExceptionHandler::class), 'handle']);
+        set_exception_handler([$this->diContainer->get(ExceptionHandler::class), 'handle']);
 
         /** @var ServerRequestInterface $httpRequest */
         /** @var RequestHandlerInterface $httpRequestHandler */
         /** @var HttpResponseHandler $httpResponseHandler */
-        $httpRequest = $this->objectManager->get(ServerRequestInterface::class);
-        $httpRequestHandler = $this->objectManager->get(RequestHandlerInterface::class);
-        $httpResponseHandler = $this->objectManager->get(HttpResponseHandler::class);
+        $httpRequest = $this->diContainer->get(ServerRequestInterface::class);
+        $httpRequestHandler = $this->diContainer->get(RequestHandlerInterface::class);
+        $httpResponseHandler = $this->diContainer->get(HttpResponseHandler::class);
         $httpResponseHandler->handle($httpRequestHandler->handle($httpRequest));
     }
 }

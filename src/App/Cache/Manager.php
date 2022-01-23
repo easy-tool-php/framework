@@ -3,26 +3,26 @@
 namespace EasyTool\Framework\App\Cache;
 
 use EasyTool\Framework\App\Cache\Adapter\AdapterInterface;
-use EasyTool\Framework\App\Config;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
+use EasyTool\Framework\App\Env\Config as EnvConfig;
 
 class Manager
 {
-    public const CONFIG_NAME = 'cache';
-    public const CONFIG_ENV_PATH = 'cache';
+    public const CONFIG_PATH = 'cache';
 
-    private Config $config;
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
+    private EnvConfig $envConfig;
     private array $caches = [];
     private array $status = [];
 
     public function __construct(
         Config $config,
-        ObjectManager $objectManager
+        EnvConfig $envConfig,
+        DiContainer $diContainer
     ) {
-        $this->config = $config;
-        $this->objectManager = $objectManager;
-        $this->status = $this->config->get(null, self::CONFIG_NAME);
+        $this->diContainer = $diContainer;
+        $this->envConfig = $envConfig;
+        $this->status = $config->getData();
     }
 
     /**
@@ -32,10 +32,10 @@ class Manager
     {
         switch ($config['adapter']) {
             case Adapter\Files::CODE:
-                return $this->objectManager->create(Adapter\Files::class);
+                return $this->diContainer->create(Adapter\Files::class);
 
             default:
-                return $this->objectManager->create($config['adapter'])->setConfig($config);
+                return $this->diContainer->create($config['adapter'])->setConfig($config);
         }
     }
 
@@ -44,9 +44,8 @@ class Manager
      */
     public function getAllCaches()
     {
-        $status = $this->config->get(null, self::CONFIG_NAME);
         foreach (array_keys($this->caches) as $cacheName) {
-            if (!isset($status[$cacheName])) {
+            if (!isset($this->status[$cacheName])) {
                 $this->getCache($cacheName);
             }
         }
@@ -62,10 +61,10 @@ class Manager
             if (!isset($this->status[$name])) {
                 $this->status[$name] = true;
             }
-            $this->caches[$name] = $this->objectManager->create(
+            $this->caches[$name] = $this->diContainer->create(
                 Cache::class,
                 [
-                    'adapter' => $this->getAdapterInstance($this->config->getEnv(self::CONFIG_ENV_PATH)),
+                    'adapter' => $this->getAdapterInstance($this->envConfig->get(self::CONFIG_PATH)),
                     'name' => $name,
                     'isEnabled' => $this->status[$name]
                 ]

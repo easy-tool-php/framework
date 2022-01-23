@@ -2,29 +2,29 @@
 
 namespace EasyTool\Framework\App\Module\Controller;
 
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class Context
 {
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
     private ServerRequestInterface $request;
     private ResponseFactoryInterface $responseFactory;
 
     public function __construct(
-        ObjectManager $objectManager,
+        DiContainer $diContainer,
         ServerRequestInterface $request,
         ResponseFactoryInterface $responseFactory
     ) {
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
         $this->request = $request;
         $this->responseFactory = $responseFactory;
     }
 
-    public function getObjectManager(): ObjectManager
+    public function getDiContainer(): DiContainer
     {
-        return $this->objectManager;
+        return $this->diContainer;
     }
 
     public function getRequest(): ServerRequestInterface

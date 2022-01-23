@@ -3,7 +3,7 @@
 namespace EasyTool\Framework\Validation;
 
 use EasyTool\Framework\App\Exception\ClassException;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\Code\VariableTransformer;
 use EasyTool\Framework\Validation\Exception\RuleNotFound;
 
@@ -11,17 +11,17 @@ class Validator
 {
     public const RULE_SEPARATOR = '|';
 
-    protected ObjectManager $objectManager;
+    protected DiContainer $diContainer;
     protected VariableTransformer $variableTransformer;
 
     protected array $rules = [];
     protected array $data = [];
 
     public function __construct(
-        ObjectManager $objectManager,
+        DiContainer $diContainer,
         VariableTransformer $variableTransformer
     ) {
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
         $this->variableTransformer = $variableTransformer;
     }
 
@@ -108,7 +108,7 @@ class Validator
                 $validateClass = $validateName;
         }
         try {
-            $validator = $this->objectManager->get($validateClass);
+            $validator = $this->diContainer->get($validateClass);
         } catch (ClassException $e) {
             throw new RuleNotFound(sprintf('Specified validator `%s` is not found.', $validateName));
         }

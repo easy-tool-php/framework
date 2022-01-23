@@ -6,10 +6,10 @@ use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
-use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
+use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\Filesystem\FileManager;
 use EasyTool\Framework\Validation\Validator;
 
@@ -30,9 +30,9 @@ class Manager
     public const MODULE_DEPENDS = 'depends';
     public const MODULE_ROUTE = 'route';
 
-    private App $app;
     private CacheManager $cacheManager;
     private Config $config;
+    private Directory $directory;
     private EventManager $eventManager;
     private FileManager $fileManager;
     private Validator $validator;
@@ -45,14 +45,14 @@ class Manager
     ];
 
     public function __construct(
-        App $app,
+        Directory $directory,
         CacheManager $cacheManager,
         Config $config,
         EventManager $eventManager,
         FileManager $fileManager,
         Validator $validator
     ) {
-        $this->app = $app;
+        $this->directory = $directory;
         $this->cacheManager = $cacheManager;
         $this->config = $config;
         $this->eventManager = $eventManager;
@@ -165,7 +165,7 @@ class Manager
              *     Modules which do not exist in the config file will be added after initializing.
              */
             $this->modules = [self::ENABLED => [], self::DISABLED => []];
-            $this->moduleStatus = $this->config->get(null, self::CONFIG_NAME);
+            $this->moduleStatus = $this->config->getData();
 
             /**
              * Collect modules built by 3rd party from `vendor` folder
@@ -181,7 +181,7 @@ class Manager
             /**
              * Collect local customized modules from `app/modules` folder
              */
-            $dir = $this->app->getDirectoryPath(App::DIR_MODULES);
+            $dir = $this->directory->getDirectoryPath(App::DIR_MODULES);
             foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
                 $directory = $dir . '/' . $moduleDir;
                 if (($moduleConfig = $this->checkModuleConfig($directory))) {

@@ -4,17 +4,17 @@ namespace EasyTool\Framework\App\Model;
 
 use EasyTool\Framework\App\Data\DataObject;
 use EasyTool\Framework\App\Database\Connection;
-use EasyTool\Framework\App\Database\Manager as DatabaseManager;
+use EasyTool\Framework\App\Database\Manager as DbManager;
 use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\Manager as EventManager;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Exception;
 
 abstract class AbstractModel extends DataObject
 {
     public const MAIN_TABLE = null;
     public const PRIMARY_KEY = 'id';
-    public const CONN_NAME = DatabaseManager::DEFAULT_CONN;
+    public const CONN_NAME = DbManager::DEFAULT_CONN;
 
     protected Connection $conn;
     protected EventManager $eventManager;
@@ -165,7 +165,7 @@ abstract class AbstractModel extends DataObject
      */
     public static function createInstance(): AbstractModel
     {
-        return ObjectManager::getInstance()->create(static::class);
+        return DiContainer::getInstance()->create(static::class);
     }
 
     /**
@@ -173,6 +173,6 @@ abstract class AbstractModel extends DataObject
      */
     public static function createCollection(): AbstractCollection
     {
-        return ObjectManager::getInstance()->create(static::class . '\\Collection');
+        return DiContainer::getInstance()->create(static::class . '\\Collection');
     }
 }

@@ -2,8 +2,8 @@
 
 namespace EasyTool\Framework\App\Database;
 
-use EasyTool\Framework\App\Database\Manager as DatabaseManager;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Database\Manager as DbManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\Validation\Validator;
 use InvalidArgumentException;
 use Laminas\Db\Metadata\MetadataInterface;
@@ -79,8 +79,8 @@ class Setup
     public const INDEX_TYPE_PRIMARY = 'primary';
     public const INDEX_TYPE_UNIQUE = 'unique';
 
-    private DatabaseManager $databaseManager;
-    private ObjectManager $objectManager;
+    private DbManager $dbManager;
+    private DiContainer $diContainer;
     private Validator $validator;
 
     private array $sources = [];
@@ -111,12 +111,12 @@ class Setup
     ];
 
     public function __construct(
-        DatabaseManager $databaseManager,
-        ObjectManager $objectManager,
+        DbManager $dbManager,
+        DiContainer $diContainer,
         Validator $validator
     ) {
-        $this->databaseManager = $databaseManager;
-        $this->objectManager = $objectManager;
+        $this->dbManager = $dbManager;
+        $this->diContainer = $diContainer;
         $this->validator = $validator;
     }
 
@@ -152,7 +152,7 @@ class Setup
         ) {
             throw new InvalidArgumentException('Invalid column metadata.');
         }
-        return $this->objectManager->create($this->columnTypes[$metadata[self::COL_TYPE]], [
+        return $this->diContainer->create($this->columnTypes[$metadata[self::COL_TYPE]], [
             'name'     => $metadata[self::COL_NAME],
             'length'   => $metadata[self::COL_LENGTH] ?? null,
             'nullable' => $metadata[self::COL_NULLABLE] ?? null,
@@ -188,7 +188,7 @@ class Setup
                 $metadata[self::INDEX_TYPE] . '_' . implode('_', $metadata[self::INDEX_COLUMNS])
             );
         }
-        return $this->objectManager->create($this->indexTypes[$metadata[self::INDEX_TYPE]], [
+        return $this->diContainer->create($this->indexTypes[$metadata[self::INDEX_TYPE]], [
             'name'            => $metadata[self::INDEX_NAME],
             'columns'         => $metadata[self::INDEX_COLUMNS],
             'referenceTable'  => $metadata[self::INDEX_REF_TABLE] ?? null,
@@ -205,10 +205,10 @@ class Setup
         string $table,
         array $columns,
         array $indexes = [],
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
         /** @var CreateTable $sql */
-        $sql = $this->objectManager->create(CreateTable::class, ['table' => $table]);
+        $sql = $this->diContainer->create(CreateTable::class, ['table' => $table]);
         foreach ($columns as $column) {
             $sql->addColumn($this->getDdlColumn($column));
             if (!empty($column[self::COL_AUTO_INCREMENT])) {
@@ -235,10 +235,10 @@ class Setup
      */
     public function dropTable(
         string $table,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
         /** @var DropTable $sql */
-        $sql = $this->objectManager->create(DropTable::class, ['table' => $table]);
+        $sql = $this->diContainer->create(DropTable::class, ['table' => $table]);
         $this->execute($sql, $connName);
         return $this;
     }
@@ -249,10 +249,10 @@ class Setup
     public function addColumn(
         array $metadata,
         string $table,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
         /** @var AlterTable $sql */
-        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql = $this->diContainer->create(AlterTable::class, ['table' => $table]);
         $sql->addColumn($this->getDdlColumn($metadata));
         $this->execute($sql, $connName);
         return $this;
@@ -264,10 +264,10 @@ class Setup
     public function dropColumn(
         string $columnName,
         string $table,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
         /** @var AlterTable $sql */
-        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql = $this->diContainer->create(AlterTable::class, ['table' => $table]);
         $sql->dropColumn($columnName);
         $this->execute($sql, $connName);
         return $this;
@@ -279,10 +279,10 @@ class Setup
     public function addIndex(
         array $metadata,
         string $table,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
         /** @var AlterTable $sql */
-        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql = $this->diContainer->create(AlterTable::class, ['table' => $table]);
         $sql->addConstraint($this->getDdlIndex($metadata));
         $this->execute($sql, $connName);
         return $this;
@@ -294,10 +294,10 @@ class Setup
     public function dropIndex(
         string $indexName,
         string $table,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
         /** @var AlterTable $sql */
-        $sql = $this->objectManager->create(AlterTable::class, ['table' => $table]);
+        $sql = $this->diContainer->create(AlterTable::class, ['table' => $table]);
         $sql->dropConstraint($indexName);
         $this->execute($sql, $connName);
         return $this;
@@ -308,7 +308,7 @@ class Setup
      */
     public function isTableExist(
         string $table,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): bool {
         return in_array($table, $this->getSource($connName)->getTableNames());
     }
@@ -317,11 +317,11 @@ class Setup
      * Get source of specified connection
      */
     public function getSource(
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): MetadataInterface {
         if (!isset($this->sources[$connName])) {
             $this->sources[$connName] = Factory::createSourceFromAdapter(
-                $this->databaseManager->getAdapter($connName)
+                $this->dbManager->getAdapter($connName)
             );
         }
         return $this->sources[$connName];

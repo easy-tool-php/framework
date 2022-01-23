@@ -4,7 +4,7 @@ namespace EasyTool\Framework\App\Http\Server\Request;
 
 use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Http\Server\Request;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -15,17 +15,17 @@ class Handler implements RequestHandlerInterface
 {
     public const CONFIG_MIDDLEWARES = 'middlewares';
 
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
     private ResponseFactoryInterface $responseFactory;
 
     private array $middlewares;
 
     public function __construct(
         Config $config,
-        ObjectManager $objectManager,
+        DiContainer $diContainer,
         ResponseFactoryInterface $responseFactory
     ) {
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
         $this->responseFactory = $responseFactory;
 
         // Middlewares in the pool are defined in `app/config/middlewares.php`.
@@ -49,7 +49,7 @@ class Handler implements RequestHandlerInterface
         }
 
         /** @var MiddlewareInterface $middleware */
-        $middleware = $this->objectManager->create(array_shift($this->middlewares));
+        $middleware = $this->diContainer->create(array_shift($this->middlewares));
         return $middleware->process($request, $this);
     }
 }

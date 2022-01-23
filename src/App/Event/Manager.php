@@ -2,22 +2,18 @@
 
 namespace EasyTool\Framework\App\Event;
 
-use EasyTool\Framework\App\Config;
-use EasyTool\Framework\App\Event\Config\Collector as ConfigCollector;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Exception;
 use InvalidArgumentException;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\EventDispatcher\ListenerProviderInterface;
-use ReflectionException;
 
 class Manager implements ListenerProviderInterface, EventDispatcherInterface
 {
     public const CONFIG_NAME = 'events';
 
     private Config $config;
-    private ConfigCollector $configCollector;
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
 
     /**
      * listener array, format is like ['event_name' => [$listenerClassA, $listenerClassB, ...]]
@@ -26,12 +22,10 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
 
     public function __construct(
         Config $config,
-        ConfigCollector $configCollector,
-        ObjectManager $objectManager
+        DiContainer $diContainer
     ) {
         $this->config = $config;
-        $this->configCollector = $configCollector;
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
     }
 
     /**
@@ -39,8 +33,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
      */
     public function initialize(): void
     {
-        //$this->configCollector->addSource()->collect();
-        $eventsConfig = $this->config->get('', self::CONFIG_NAME);
+        $eventsConfig = $this->config->getData();
         foreach ($eventsConfig as $name => $listeners) {
             foreach ($listeners as $listener) {
                 $this->addListener($name, $listener);
@@ -86,7 +79,6 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
     /**
      * Dispatch event
      *
-     * @throws ReflectionException
      * @throws Exception
      */
     public function dispatch(object $event): object
@@ -96,7 +88,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
         }
         if (!empty($this->listeners[$event->getName()])) {
             foreach (array_unique($this->listeners[$event->getName()]) as $listener) {
-                $this->objectManager->create($listener)->process($event);
+                $this->diContainer->create($listener)->process($event);
                 if ($event->isPropagationStopped()) {
                     break;
                 }

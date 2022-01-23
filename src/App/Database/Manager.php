@@ -3,9 +3,9 @@
 namespace EasyTool\Framework\App\Database;
 
 use DomainException;
-use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Di\Container as DiContainer;
+use EasyTool\Framework\App\Env\Config as EnvConfig;
 use EasyTool\Framework\App\Exception\ConfigException;
-use EasyTool\Framework\App\ObjectManager;
 use EasyTool\Framework\Validation\Validator;
 use Laminas\Db\Adapter\Adapter;
 
@@ -23,19 +23,19 @@ class Manager
 
     public const DRIVER_PDO_MYSQL = 'Pdo_Mysql';
 
-    private Config $config;
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
+    private EnvConfig $envConfig;
     private Validator $validator;
 
     private array $adapters = [];
 
     public function __construct(
-        Config $config,
-        ObjectManager $objectManager,
+        DiContainer $diContainer,
+        EnvConfig $envConfig,
         Validator $validator
     ) {
-        $this->config = $config;
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
+        $this->envConfig = $envConfig;
         $this->validator = $validator;
     }
 
@@ -44,7 +44,7 @@ class Manager
      */
     public function initialize()
     {
-        $adapterConfigs = $this->config->getEnv(self::CONFIG_PATH);
+        $adapterConfigs = $this->envConfig->get(self::CONFIG_PATH);
 
         foreach ($adapterConfigs as $name => $config) {
             if (
@@ -63,7 +63,7 @@ class Manager
             }
 
             /** @var Adapter $adapter */
-            $this->adapters[$name] = $this->objectManager->create(Adapter::class, ['driver' => $config]);
+            $this->adapters[$name] = $this->diContainer->create(Adapter::class, ['driver' => $config]);
         }
     }
 

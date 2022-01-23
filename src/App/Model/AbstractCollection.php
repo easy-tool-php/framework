@@ -5,7 +5,7 @@ namespace EasyTool\Framework\App\Model;
 use ArrayIterator;
 use EasyTool\Framework\App\Data\Collection;
 use EasyTool\Framework\App\Database\Connection;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Predicate\PredicateSet;
 use Laminas\Db\Sql\Select;
@@ -31,15 +31,15 @@ use ReflectionClass;
 abstract class AbstractCollection extends Collection
 {
     protected Connection $conn;
-    protected ObjectManager $objectManager;
+    protected DiContainer $diContainer;
     protected Select $select;
     protected bool $loaded = false;
     protected string $modelClass;
 
     public function __construct(
-        ObjectManager $objectManager
+        DiContainer $diContainer
     ) {
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
         $this->construct();
     }
 
@@ -103,7 +103,7 @@ abstract class AbstractCollection extends Collection
         $this->items = [];
         foreach ($this->conn->fetchAll() as $rowData) {
             /** @var AbstractModel $model */
-            $model = $this->objectManager->create($this->modelClass);
+            $model = $this->diContainer->create($this->modelClass);
             $model->setData($rowData);
             $this->items[$model->getId()] = $model;
         }

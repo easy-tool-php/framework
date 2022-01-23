@@ -9,7 +9,7 @@ use EasyTool\Framework\App\Database\Manager as DbManager;
 use EasyTool\Framework\App\Database\Setup as DbSetup;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\Module\Setup\AbstractSetup;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Laminas\Code\Scanner\DirectoryScanner;
 use ReflectionClass;
 
@@ -19,25 +19,25 @@ class Upgrade
 
     private App $app;
     private CacheManager $cacheManager;
-    private DbManager $databaseManager;
+    private DbManager $dbManager;
     private DbSetup $databaseSetup;
     private ModuleManager $moduleManager;
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
 
     public function __construct(
         App $app,
         CacheManager $cacheManager,
-        DbManager $databaseManager,
+        DbManager $dbManager,
         DbSetup $databaseSetup,
         ModuleManager $moduleManager,
-        ObjectManager $objectManager
+        DiContainer $diContainer
     ) {
         $this->app = $app;
         $this->cacheManager = $cacheManager;
-        $this->databaseManager = $databaseManager;
+        $this->dbManager = $dbManager;
         $this->databaseSetup = $databaseSetup;
         $this->moduleManager = $moduleManager;
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
     }
 
     /**
@@ -81,7 +81,7 @@ class Upgrade
     public function collectSetups(): array
     {
         /** @var DirectoryScanner $scanner */
-        $scanner = $this->objectManager->create(DirectoryScanner::class);
+        $scanner = $this->diContainer->create(DirectoryScanner::class);
         foreach ($this->moduleManager->getEnabledModules() as $module) {
             if (is_dir(($directory = $module[ModuleManager::MODULE_DIR] . '/Setup'))) {
                 $scanner->addDirectory($directory);
@@ -107,7 +107,7 @@ class Upgrade
      */
     public function process(string $processorClass)
     {
-        $this->objectManager->create($processorClass)->execute();
+        $this->diContainer->create($processorClass)->execute();
         Connection::createInstance(self::DB_TABLE)->insert(['class' => $processorClass]);
     }
 }

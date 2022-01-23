@@ -2,8 +2,8 @@
 
 namespace EasyTool\Framework\App\Database;
 
-use EasyTool\Framework\App\Database\Manager as DatabaseManager;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Database\Manager as DbManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Exception;
 use InvalidArgumentException;
 use Laminas\Db\Adapter\Driver\ConnectionInterface;
@@ -23,13 +23,13 @@ class Connection
     protected ?array $result = null;
 
     public function __construct(
-        DatabaseManager $databaseManager,
-        ObjectManager $objectManager,
+        DbManager $dbManager,
+        DiContainer $diContainer,
         ?string $mainTable = null,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ) {
-        $this->sql = $objectManager->create(Sql::class, [
-            'adapter' => $databaseManager->getAdapter($connName),
+        $this->sql = $diContainer->create(Sql::class, [
+            'adapter' => $dbManager->getAdapter($connName),
             'table'   => $mainTable
         ]);
         $this->select = $this->sql->select();
@@ -233,9 +233,9 @@ class Connection
      */
     public static function createInstance(
         ?string $mainTable,
-        string $connName = DatabaseManager::DEFAULT_CONN
+        string $connName = DbManager::DEFAULT_CONN
     ): self {
-        return ObjectManager::getInstance()->create(self::class, [
+        return DiContainer::getInstance()->create(self::class, [
             'mainTable' => $mainTable,
             'connName'  => $connName
         ]);

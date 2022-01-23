@@ -55,7 +55,7 @@ class Api extends AbstractRoute
                 }
             }
             if ($matched) {
-                $request->withAttribute(Request::ACTION, [$this->objectManager->create($action), 'execute']);
+                $request->withAttribute(Request::ACTION, [$this->diContainer->create($action), 'execute']);
                 $request->withAttribute(Request::API_PARAMS, $variables);
                 return true;
             }

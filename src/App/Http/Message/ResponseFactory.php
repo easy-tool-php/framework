@@ -2,17 +2,17 @@
 
 namespace EasyTool\Framework\App\Http\Message;
 
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 
 class ResponseFactory implements ResponseFactoryInterface
 {
-    private ObjectManager $objectManager;
+    private DiContainer $diContainer;
 
-    public function __construct(ObjectManager $objectManager)
+    public function __construct(DiContainer $diContainer)
     {
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
     }
 
     /**
@@ -21,7 +21,7 @@ class ResponseFactory implements ResponseFactoryInterface
     public function createResponse(int $code = 200, string $reasonPhrase = ''): ResponseInterface
     {
         /** @var ResponseInterface $response */
-        $response = $this->objectManager->create(ResponseInterface::class);
+        $response = $this->diContainer->create(ResponseInterface::class);
         return $response->withStatus($code, $reasonPhrase);
     }
 }

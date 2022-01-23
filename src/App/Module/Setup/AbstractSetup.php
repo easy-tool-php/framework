@@ -3,19 +3,19 @@
 namespace EasyTool\Framework\App\Module\Setup;
 
 use EasyTool\Framework\App\Database\Setup as DbSetup;
-use EasyTool\Framework\App\ObjectManager;
+use EasyTool\Framework\App\Di\Container as DiContainer;
 
 abstract class AbstractSetup
 {
     protected DbSetup $databaseSetup;
-    protected ObjectManager $objectManager;
+    protected DiContainer $diContainer;
 
     public function __construct(
         DbSetup $databaseSetup,
-        ObjectManager $objectManager
+        DiContainer $diContainer
     ) {
         $this->databaseSetup = $databaseSetup;
-        $this->objectManager = $objectManager;
+        $this->diContainer = $diContainer;
     }
 
     /**
