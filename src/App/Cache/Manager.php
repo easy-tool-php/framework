@@ -2,98 +2,47 @@
 
 namespace EasyTool\Framework\App\Cache;
 
-use EasyTool\Framework\App\Cache\Adapter\AdapterInterface;
+use EasyTool\Framework\App\Cache\Adapter\FactoryInterface;
 use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\App\Env\Config as EnvConfig;
+use Laminas\Cache\Psr\CacheItemPool\CacheItemPoolDecorator;
+use Laminas\Cache\Storage\Plugin\Serializer;
+use Psr\Cache\CacheItemPoolInterface;
 
 class Manager
 {
-    public const CONFIG_PATH = 'cache';
+    public const CONFIG_NAME = 'cache';
 
     private DiContainer $diContainer;
     private EnvConfig $envConfig;
-    private array $caches = [];
-    private array $status = [];
+    private array $storageFactories;
 
     public function __construct(
-        Config $config,
+        DiContainer $diContainer,
         EnvConfig $envConfig,
-        DiContainer $diContainer
+        array $storageFactories = []
     ) {
         $this->diContainer = $diContainer;
         $this->envConfig = $envConfig;
-        $this->status = $config->getData();
+        $this->storageFactories = $storageFactories;
     }
 
     /**
-     * Create an adapter instance with given config
+     * Implements cache pool based on environment config
      */
-    private function getAdapterInstance($config): AdapterInterface
+    public function initialize(): void
     {
-        switch ($config['adapter']) {
-            case Adapter\Files::CODE:
-                return $this->diContainer->create(Adapter\Files::class);
-
-            default:
-                return $this->diContainer->create($config['adapter'])->setConfig($config);
+        $configData = $this->envConfig->get(self::CONFIG_NAME);
+        if (!isset($this->storageFactories[$configData['adapter']])) {
+            throw new \DomainException('Specified cache storage adapter does not exist.');
         }
-    }
-
-    /**
-     * Get all caches
-     */
-    public function getAllCaches()
-    {
-        foreach (array_keys($this->caches) as $cacheName) {
-            if (!isset($this->status[$cacheName])) {
-                $this->getCache($cacheName);
-            }
-        }
-        return $this->caches;
-    }
-
-    /**
-     * Get cache by given name
-     */
-    public function getCache(string $name): Cache
-    {
-        if (!isset($this->caches[$name])) {
-            if (!isset($this->status[$name])) {
-                $this->status[$name] = true;
-            }
-            $this->caches[$name] = $this->diContainer->create(
-                Cache::class,
-                [
-                    'adapter' => $this->getAdapterInstance($this->envConfig->get(self::CONFIG_PATH)),
-                    'name' => $name,
-                    'isEnabled' => $this->status[$name]
-                ]
-            );
-        }
-        return $this->caches[$name];
-    }
-
-    /**
-     * Enable specified cache
-     */
-    public function enable(string $name): self
-    {
-        if (!isset($this->status[$name]) && !isset($this->caches)) {
-            throw new InvalidArgumentException('Invalid cache name.');
-        }
-        $this->status[$name] = true;
-        return $this;
-    }
-
-    /**
-     * Disable specified cache
-     */
-    public function disable(string $name): self
-    {
-        if (!isset($this->status[$name]) && !isset($this->caches)) {
-            throw new InvalidArgumentException('Invalid cache name.');
-        }
-        $this->status[$name] = false;
-        return $this;
+        /** @var FactoryInterface $storageFactory */
+        $storageFactory = $this->storageFactories[$configData['adapter']];
+        $storage = $storageFactory->create($configData['options'] ?? []);
+        $cachePool = $this->diContainer->create(
+            CacheItemPoolDecorator::class,
+            ['storage' => $storage->addPlugin(new Serializer())]
+        );
+        $this->diContainer->setInstance(CacheItemPoolInterface::class, $cachePool);
     }
 }

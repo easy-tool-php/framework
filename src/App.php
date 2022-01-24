@@ -4,15 +4,15 @@ namespace EasyTool\Framework;
 
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
-use EasyTool\Framework\App\Config\Collector as ConfigCollector;
+use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Database\Manager as DbManager;
 use EasyTool\Framework\App\Di\Container as DiContainer;
-use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\Handler as ExceptionHandler;
 use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\App\Http\Server\Response\Handler as HttpResponseHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use Laminas\Code\Scanner\DirectoryScanner;
+use Laminas\EventManager\EventManager;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
@@ -24,20 +24,17 @@ class App
     public const FRAMEWORK_NAME = 'EasyTool';
     public const PACKAGE_NAME = 'easy-tool/framework';
 
-    private Area $area;
     private ClassLoader $classLoader;
     private DiContainer $diContainer;
     private ModuleManager $moduleManager;
     private string $dirRoot;
 
     public function __construct(
-        Area $area,
         ClassLoader $classLoader,
         DiContainer $diContainer,
         Directory $directory,
         string $dirRoot
     ) {
-        $this->area = $area;
         $this->classLoader = $classLoader;
         $this->diContainer = $diContainer;
         $this->dirRoot = $dirRoot;
@@ -46,8 +43,8 @@ class App
     }
 
     /**
-     * Initializing need to be done at the beginning of handle methods instead of class construct,
-     *     because the App singleton may also injected by some classes which may cause dead loop.
+     * Initialization is done at the beginning of handle methods instead of class construct,
+     *     so that to prevent circular dependency.
      */
     private function initialize(): void
     {
@@ -56,16 +53,18 @@ class App
          */
         ini_set('date.timezone', 'UTC');
 
-        /** @var ConfigCollector $configCollector */
-        $configCollector = $this->diContainer->get(ConfigCollector::class);
+        /** @var CacheManager $cacheManager */
+        /** @var DbManager $dbManager */
+        /** @var EventManager $eventManager */
+        $cacheManager = $this->diContainer->get(CacheManager::class);
         $dbManager = $this->diContainer->get(DbManager::class);
         $eventManager = $this->diContainer->get(EventManager::class);
         $this->moduleManager = $this->diContainer->get(ModuleManager::class);
 
-        $configCollector->collect();
-        //$this->eventManager->initialize();
-        //$this->dbManager->initialize();
-        //$this->moduleManager->initialize($this->classLoader);
+        $cacheManager->initialize();
+        //$eventManager->initialize();
+        //$dbManager->initialize();
+        //$moduleManager->initialize($this->classLoader);
     }
 
     /**
@@ -101,7 +100,8 @@ class App
     public function handleCommand(): void
     {
         $this->initialize();
-        $this->area->setCode(Area::CLI);
+        $this->diContainer->get(Area::class)->setCode(Area::CLI);
+        return;
 
         /** @var ConsoleApplication $consoleApplication */
         /** @var DirectoryScanner $scanner */
