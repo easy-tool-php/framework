@@ -16,16 +16,18 @@ class Config extends AbstractConfig
         Validator $validator
     ) {
         $data = require $directory->getDirectoryPath(Directory::CONFIG) . '/' . self::FILENAME;
-        if (!$validator->validate(
-            [
-                'api.route'     => ['required', 'string'],
-                'backend.route' => ['required', 'string'],
-                'cache.adapter' => ['required', 'string'],
-                'cache.options' => ['array'],
-                'database'      => ['required', 'array']
-            ],
-            $data
-        )) {
+        if (
+            !$validator->validate(
+                [
+                    'api.route'     => ['required', 'string'],
+                    'backend.route' => ['required', 'string'],
+                    'cache.adapter' => ['required', 'string'],
+                    'cache.options' => ['array'],
+                    'database'      => ['required', 'array']
+                ],
+                $data
+            )
+        ) {
             throw new DomainException('Invalid environment config data.');
         }
         parent::__construct($data);

@@ -54,16 +54,13 @@ class App
         ini_set('date.timezone', 'UTC');
 
         /** @var CacheManager $cacheManager */
-        /** @var DbManager $dbManager */
         /** @var EventManager $eventManager */
         $cacheManager = $this->diContainer->get(CacheManager::class);
-        $dbManager = $this->diContainer->get(DbManager::class);
         $eventManager = $this->diContainer->get(EventManager::class);
         $this->moduleManager = $this->diContainer->get(ModuleManager::class);
 
         $cacheManager->initialize();
         //$eventManager->initialize();
-        //$dbManager->initialize();
         //$moduleManager->initialize($this->classLoader);
     }
 

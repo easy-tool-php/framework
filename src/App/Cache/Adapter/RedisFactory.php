@@ -21,21 +21,23 @@ class RedisFactory implements FactoryInterface
      */
     public function create(array $options): AbstractAdapter
     {
-        if (!$this->validator->validate(
-            [
-                'server'              => ['required'],
-                'server.host'         => ['required', 'string'],
-                'server.port'         => ['int'],
-                'server.timeout'      => ['int'],
-                'database'            => ['int'],
-                'lib_options'         => ['array'],
-                'namespace_separator' => ['string'],
-                'password'            => ['string'],
-                'persistent_id'       => ['string'],
-                'resource_manager'    => ['string']
-            ],
-            $options
-        )) {
+        if (
+            !$this->validator->validate(
+                [
+                    'server'              => ['required'],
+                    'server.host'         => ['required', 'string'],
+                    'server.port'         => ['int'],
+                    'server.timeout'      => ['int'],
+                    'database'            => ['int'],
+                    'lib_options'         => ['array'],
+                    'namespace_separator' => ['string'],
+                    'password'            => ['string'],
+                    'persistent_id'       => ['string'],
+                    'resource_manager'    => ['string']
+                ],
+                $options
+            )
+        ) {
             throw new DomainException('Invalid cache options.');
         }
         return new Redis($options);

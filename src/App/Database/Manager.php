@@ -5,22 +5,13 @@ namespace EasyTool\Framework\App\Database;
 use DomainException;
 use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\App\Env\Config as EnvConfig;
-use EasyTool\Framework\App\Exception\ConfigException;
 use EasyTool\Framework\Validation\Validator;
 use Laminas\Db\Adapter\Adapter;
 
 class Manager
 {
     public const CONFIG_PATH = 'database';
-
     public const DEFAULT_CONN = 'default';
-
-    public const DB_DRIVER = 'driver';
-    public const DB_HOST = 'host';
-    public const DB_DATABASE = 'database';
-    public const DB_USERNAME = 'username';
-    public const DB_PASSWORD = 'password';
-
     public const DRIVER_PDO_MYSQL = 'Pdo_Mysql';
 
     private DiContainer $diContainer;
@@ -40,31 +31,22 @@ class Manager
     }
 
     /**
-     * Collect config data from `app/config/database.php` and initialize adapters
+     * Check whether given config data is valid
      */
-    public function initialize()
+    private function validate(array $configData): bool
     {
-        $adapterConfigs = $this->envConfig->get(self::CONFIG_PATH);
-
-        foreach ($adapterConfigs as $name => $config) {
-            if (
-                !$this->validator->validate(
-                    [
-                        self::DB_DRIVER   => ['required', 'string', 'options' => [self::DRIVER_PDO_MYSQL]],
-                        self::DB_HOST     => ['required', 'string'],
-                        self::DB_DATABASE => ['required', 'string'],
-                        self::DB_USERNAME => ['required', 'string'],
-                        self::DB_PASSWORD => ['required', 'string']
-                    ],
-                    $config
-                )
-            ) {
-                throw new ConfigException('Invalid database config.');
-            }
-
-            /** @var Adapter $adapter */
-            $this->adapters[$name] = $this->diContainer->create(Adapter::class, ['driver' => $config]);
-        }
+        return $this->validator->validate(
+            [
+                'driver' => ['required', 'string', 'options' => [self::DRIVER_PDO_MYSQL]],
+                'host' => ['required', 'string'],
+                'database' => ['required', 'string'],
+                'username' => ['required', 'string'],
+                'password' => ['required', 'string'],
+                'port' => ['int'],
+                'charset' => ['string']
+            ],
+            $configData
+        );
     }
 
     /**
@@ -73,7 +55,17 @@ class Manager
     public function getAdapter(string $name = self::DEFAULT_CONN): Adapter
     {
         if (!isset($this->adapters[$name])) {
-            throw new DomainException(sprintf('Unexpected adapter: %s', $name));
+            $configData = $this->envConfig->get(self::CONFIG_PATH);
+            if (!isset($configData[$name])) {
+                throw new DomainException(sprintf('Specified database adapter `%s` is not configured.', $name));
+            }
+            if (!$this->validate($configData[$name])) {
+                throw new DomainException(sprintf('Invalid config for database adapter `%s`.', $name));
+            }
+            $this->adapters[$name] = $this->diContainer->create(
+                Adapter::class,
+                ['driver' => $configData[$name]]
+            );
         }
         return $this->adapters[$name];
     }

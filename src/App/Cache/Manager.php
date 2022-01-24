@@ -11,7 +11,7 @@ use Psr\Cache\CacheItemPoolInterface;
 
 class Manager
 {
-    public const CONFIG_NAME = 'cache';
+    public const ENV_PATH = 'cache';
 
     private DiContainer $diContainer;
     private EnvConfig $envConfig;
@@ -32,7 +32,7 @@ class Manager
      */
     public function initialize(): void
     {
-        $configData = $this->envConfig->get(self::CONFIG_NAME);
+        $configData = $this->envConfig->get(self::ENV_PATH);
         if (!isset($this->storageFactories[$configData['adapter']])) {
             throw new \DomainException('Specified cache storage adapter does not exist.');
         }
