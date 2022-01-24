@@ -2,14 +2,13 @@
 
 namespace EasyTool\Framework\App\Event;
 
-use EasyTool\Framework\App\Config\AbstractConfig;
+use EasyTool\Framework\App\Config\AbstractFileConfig;
 
-class Config extends AbstractConfig
+class Config extends AbstractFileConfig
 {
-    public const NAME = 'events';
-
-    public function collectData()
-    {
-        echo get_class($this);
-    }
+    protected string $filename = 'events.php';
+    protected array $format = [
+        '*.*.listener' => ['required', 'string'],
+        '*.*.order'    => ['int']
+    ];
 }

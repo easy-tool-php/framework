@@ -5,14 +5,13 @@ namespace EasyTool\Framework;
 use Composer\Autoload\ClassLoader;
 use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
-use EasyTool\Framework\App\Database\Manager as DbManager;
 use EasyTool\Framework\App\Di\Container as DiContainer;
+use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\Handler as ExceptionHandler;
 use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\App\Http\Server\Response\Handler as HttpResponseHandler;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use Laminas\Code\Scanner\DirectoryScanner;
-use Laminas\EventManager\EventManager;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionClass;
@@ -60,7 +59,7 @@ class App
         $this->moduleManager = $this->diContainer->get(ModuleManager::class);
 
         $cacheManager->initialize();
-        //$eventManager->initialize();
+        $eventManager->initialize();
         //$moduleManager->initialize($this->classLoader);
     }
 

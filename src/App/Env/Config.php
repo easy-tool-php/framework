@@ -2,34 +2,27 @@
 
 namespace EasyTool\Framework\App\Env;
 
-use DomainException;
-use EasyTool\Framework\App\Config\AbstractConfig;
+use EasyTool\Framework\App\Config\AbstractFileConfig;
 use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\Validation\Validator;
 
-class Config extends AbstractConfig
+class Config extends AbstractFileConfig
 {
-    public const FILENAME = 'env.php';
+    protected string $filename = 'env.php';
+    protected array $format = [
+        'api.route'     => ['required', 'string'],
+        'backend.route' => ['required', 'string'],
+        'cache.adapter' => ['required', 'string'],
+        'cache.options' => ['array'],
+        'database'      => ['required', 'array']
+    ];
 
     public function __construct(
         Directory $directory,
-        Validator $validator
+        Validator $validator,
+        array $data = []
     ) {
-        $data = require $directory->getDirectoryPath(Directory::CONFIG) . '/' . self::FILENAME;
-        if (
-            !$validator->validate(
-                [
-                    'api.route'     => ['required', 'string'],
-                    'backend.route' => ['required', 'string'],
-                    'cache.adapter' => ['required', 'string'],
-                    'cache.options' => ['array'],
-                    'database'      => ['required', 'array']
-                ],
-                $data
-            )
-        ) {
-            throw new DomainException('Invalid environment config data.');
-        }
-        parent::__construct($data);
+        parent::__construct($validator, $data);
+        $this->collectData($directory->getDirectoryPath(Directory::CONFIG));
     }
 }
