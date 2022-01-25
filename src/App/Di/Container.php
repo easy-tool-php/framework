@@ -53,8 +53,8 @@ class Container extends DefaultContainer
         if (self::$instance === null) {
             $config = new Config();
             $injector = new Injector($config);
-            self::$instance = new Container($injector);
-            self::$instance->setInstance(Config::class, $config);
+            self::$instance = (new Container($injector))->setInstance(Config::class, $config);
+            $injector->setContainer(self::$instance);
         }
         return self::$instance;
     }

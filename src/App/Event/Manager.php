@@ -35,9 +35,7 @@ class Manager implements ListenerProviderInterface, EventDispatcherInterface
      */
     public function initialize(): void
     {
-        $eventsConfig = $this->config
-            ->collectData($this->directory->getDirectoryPath(Directory::CONFIG))
-            ->getData();
+        $eventsConfig = $this->config->collectData($this->directory->getDirectoryPath(Directory::CONFIG));
         foreach ($eventsConfig as $eventName => $listeners) {
             foreach ($listeners as $listener) {
                 $this->addListener($eventName, $listener);

@@ -23,6 +23,6 @@ class Config extends AbstractFileConfig
         array $data = []
     ) {
         parent::__construct($validator, $data);
-        $this->collectData($directory->getDirectoryPath(Directory::CONFIG));
+        $this->data = $this->collectData($directory->getDirectoryPath(Directory::CONFIG));
     }
 }

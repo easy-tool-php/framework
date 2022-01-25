@@ -14,7 +14,7 @@ class Manager
 {
     public const ENV_PATH = 'cache';
 
-    private CacheItemPoolInterface $cachePool;
+    private ?CacheItemPoolInterface $cachePool = null;
     private DiContainer $diContainer;
     private EnvConfig $envConfig;
     private array $storageFactories;
@@ -46,6 +46,14 @@ class Manager
             ['storage' => $storage->addPlugin(new Serializer())]
         );
         $this->diContainer->setInstance(CacheItemPoolInterface::class, $this->cachePool);
+    }
+
+    /**
+     * Check whether specified cache is enabled
+     */
+    public function isEnabled(string $name): bool
+    {
+        return true;
     }
 
     /**

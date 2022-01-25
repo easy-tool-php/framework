@@ -2,13 +2,15 @@
 
 namespace EasyTool\Framework\App\Module;
 
-use EasyTool\Framework\App\Config\AbstractConfig;
+use EasyTool\Framework\App\Area;
+use EasyTool\Framework\App\Config\AbstractFileConfig;
 
-class Config extends AbstractConfig
+class Config extends AbstractFileConfig
 {
-    public const NAME = 'modules';
-
-    public function collectData()
-    {
-    }
+    protected string $filename = 'module.php';
+    protected array $format = [
+        'name'    => ['required'],
+        'depends' => ['array'],
+        'route'   => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
+    ];
 }

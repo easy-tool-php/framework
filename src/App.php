@@ -56,11 +56,11 @@ class App
         /** @var EventManager $eventManager */
         $cacheManager = $this->diContainer->get(CacheManager::class);
         $eventManager = $this->diContainer->get(EventManager::class);
-        $this->moduleManager = $this->diContainer->get(ModuleManager::class);
+        $moduleManager = $this->diContainer->get(ModuleManager::class);
 
         $cacheManager->initialize();
         $eventManager->initialize();
-        //$moduleManager->initialize($this->classLoader);
+        $moduleManager->initialize($this->classLoader);
     }
 
     /**
@@ -97,7 +97,6 @@ class App
     {
         $this->initialize();
         $this->diContainer->get(Area::class)->setCode(Area::CLI);
-        return;
 
         /** @var ConsoleApplication $consoleApplication */
         /** @var DirectoryScanner $scanner */
@@ -107,7 +106,7 @@ class App
         );
         $scanner = $this->diContainer->get(DirectoryScanner::class);
         $scanner->addDirectory(__DIR__ . '/App/Command');
-        foreach ($this->moduleManager->getEnabledModules() as $module) {
+        foreach ($this->diContainer->get(ModuleManager::class)->getEnabledModules() as $module) {
             if (is_dir(($directory = $module[ModuleManager::MODULE_DIR] . '/Command'))) {
                 $scanner->addDirectory($directory);
             }

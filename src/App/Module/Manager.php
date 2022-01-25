@@ -3,8 +3,10 @@
 namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
-use EasyTool\Framework\App\Area;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
+use EasyTool\Framework\App\Di\Config as DiConfig;
+use EasyTool\Framework\App\Di\Container as DiContainer;
+use EasyTool\Framework\App\Event\Config as EventConfig;
 use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
@@ -15,10 +17,6 @@ use EasyTool\Framework\Validation\Validator;
 class Manager
 {
     public const CACHE_NAME = 'modules';
-    public const CACHE_MODULES = 'modules';
-
-    public const CONFIG_NAME = 'modules';
-    public const CONFIG_FILE = 'config/module.php';
 
     public const ENABLED = 'enabled';
     public const DISABLED = 'disabled';
@@ -31,7 +29,10 @@ class Manager
 
     private CacheManager $cacheManager;
     private Config $config;
+    private DiConfig $diConfig;
+    private DiContainer $diContainer;
     private Directory $directory;
+    private EventConfig $eventConfig;
     private EventManager $eventManager;
     private FileManager $fileManager;
     private Validator $validator;
@@ -44,37 +45,25 @@ class Manager
     ];
 
     public function __construct(
-        Directory $directory,
         CacheManager $cacheManager,
         Config $config,
+        DiConfig $diConfig,
+        DiContainer $diContainer,
+        Directory $directory,
+        EventConfig $eventConfig,
         EventManager $eventManager,
         FileManager $fileManager,
         Validator $validator
     ) {
-        $this->directory = $directory;
         $this->cacheManager = $cacheManager;
         $this->config = $config;
+        $this->diConfig = $diConfig;
+        $this->diContainer = $diContainer;
+        $this->directory = $directory;
+        $this->eventConfig = $eventConfig;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
         $this->validator = $validator;
-    }
-
-    /**
-     * Check whether given folder is a module directory
-     */
-    private function checkModuleConfig(string $directory): ?array
-    {
-        return (is_file(($configFile = $directory . '/' . self::CONFIG_FILE))
-            && is_array(($config = require $configFile))
-            && $this->validator->validate(
-                [
-                    self::MODULE_NAME    => ['required'],
-                    self::MODULE_DEPENDS => ['array'],
-                    self::MODULE_ROUTE   => ['array', 'options' => [Area::FRONTEND, Area::BACKEND, Area::API]]
-                ],
-                $config
-            ))
-            ? $config : null;
     }
 
     /**
@@ -138,11 +127,40 @@ class Manager
         return 0;
     }
 
-    /**
-     * Initialize each module
-     */
-    private function initModule(array $moduleConfig): void
+    private function initModules(ClassLoader $classLoader): void
     {
+        /**
+         * Developer is able to enable/disable a module through editing `app/config/modules.php`.
+         *     Modules which do not exist in the config file will be added after initializing.
+         */
+        $this->modules = [self::ENABLED => [], self::DISABLED => []];
+        $this->moduleStatus = $this->config->getData();
+
+        /**
+         * Collect modules built by 3rd party from `vendor` folder
+         */
+        foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
+            foreach ($directoryGroup as $directory) {
+                if (($moduleConfig = $this->config->collectData($directory))) {
+                    $this->collectModule($moduleConfig, $namespace, $directory);
+                }
+            }
+        }
+
+        /**
+         * Collect local customized modules from `app/modules` folder
+         */
+        $dir = $this->directory->getDirectoryPath(Directory::MODULES);
+        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
+            $directory = $dir . '/' . $moduleDir;
+            if (($moduleConfig = $this->config->collectData($directory))) {
+                $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
+            }
+        }
+
+        $this->checkDependency();
+        usort($this->modules[self::ENABLED], [$this, 'sortModules']);
+        $this->config->setData($this->moduleStatus);
     }
 
     /**
@@ -155,51 +173,21 @@ class Manager
          * Collect all necessary data from cache in order to save memory and improve performance.
          *     Skip this step if the cache is disabled or empty.
          */
-        $cache = $this->cacheManager->getCache(self::CACHE_NAME);
-        if ($cache->isEnabled() && ($cachedModules = $cache->get(self::CACHE_MODULES))) {
-            $this->modules = $cachedModules;
+        if ($this->cacheManager->isEnabled(self::CACHE_NAME)) {
+            $cache = $this->cacheManager->getCache(self::CACHE_NAME);
+            if (($cachedModules = $cache->get())) {
+                $this->modules = $cachedModules;
+            } else {
+                $this->initModules($classLoader);
+                $cache->set($this->modules);
+                $this->cacheManager->saveCache(self::CACHE_NAME);
+            }
         } else {
-            /**
-             * Developer is able to enable/disable a module through editing `app/config/modules.php`.
-             *     Modules which do not exist in the config file will be added after initializing.
-             */
-            $this->modules = [self::ENABLED => [], self::DISABLED => []];
-            $this->moduleStatus = $this->config->getData();
-
-            /**
-             * Collect modules built by 3rd party from `vendor` folder
-             */
-            foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
-                foreach ($directoryGroup as $directory) {
-                    if (($moduleConfig = $this->checkModuleConfig($directory))) {
-                        $this->collectModule($moduleConfig, $namespace, $directory);
-                    }
-                }
-            }
-
-            /**
-             * Collect local customized modules from `app/modules` folder
-             */
-            $dir = $this->directory->getDirectoryPath(Directory::MODULES);
-            foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
-                $directory = $dir . '/' . $moduleDir;
-                if (($moduleConfig = $this->checkModuleConfig($directory))) {
-                    $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
-                }
-            }
-
-            $this->checkDependency();
-            usort($this->modules[self::ENABLED], [$this, 'sortModules']);
-            foreach ($this->modules[self::ENABLED] as $module) {
-                $this->initModule($module);
-            }
-            $this->config->setData($this->moduleStatus);
-
-            $cache->set(self::CACHE_MODULES, $this->modules);
-            $cache->save();
+            $this->initModules($classLoader);
         }
-
-        $this->eventManager->dispatch((new Event('after_modules_init'))->set('modules', $this->modules[self::ENABLED]));
+        $this->eventManager->dispatch(
+            (new Event('after_modules_init'))->set('modules', $this->modules[self::ENABLED])
+        );
     }
 
     /**

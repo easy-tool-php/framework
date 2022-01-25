@@ -20,13 +20,20 @@ abstract class AbstractFileConfig extends AbstractConfig
     /**
      * Collect data from specified directory
      */
-    public function collectData($dir): self
+    public function collectData($dir): array
     {
-        $configData = require $dir . '/' . $this->filename;
+        $configData = is_file(($filepath = $dir . '/' . $this->filename)) ? (require $filepath) : [];
         if (!$this->validator->validate($this->format, $configData)) {
             throw new DomainException('Invalid config.');
         }
-        $this->setData($configData);
-        return $this;
+        return $configData;
+    }
+
+    /**
+     * Check whether given config data is valid
+     */
+    public function validate(array $configData): bool
+    {
+        return $this->validator->validate($this->format, $configData);
     }
 }
