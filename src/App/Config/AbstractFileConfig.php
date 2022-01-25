@@ -24,7 +24,7 @@ abstract class AbstractFileConfig extends AbstractConfig
     {
         $configData = is_file(($filepath = $dir . '/' . $this->filename)) ? (require $filepath) : [];
         if (!$this->validator->validate($this->format, $configData)) {
-            throw new DomainException('Invalid config.');
+            throw new DomainException(sprintf('Invalid config data in file `%s`.', $filepath));
         }
         return $configData;
     }

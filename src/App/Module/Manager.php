@@ -3,6 +3,7 @@
 namespace EasyTool\Framework\App\Module;
 
 use Composer\Autoload\ClassLoader;
+use DomainException;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Di\Config as DiConfig;
 use EasyTool\Framework\App\Di\Container as DiContainer;
@@ -20,6 +21,8 @@ class Manager
 
     public const ENABLED = 'enabled';
     public const DISABLED = 'disabled';
+
+    public const DIR_CONFIG = 'config';
 
     public const MODULE_NAME = 'name';
     public const MODULE_NAMESPACE = 'namespace';
@@ -127,6 +130,10 @@ class Manager
         return 0;
     }
 
+    /**
+     * Try to collect modules and process related configuration
+     * This method will be executed only on the cache is invalid.
+     */
     private function initModules(ClassLoader $classLoader): void
     {
         /**
@@ -141,8 +148,14 @@ class Manager
          */
         foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
             foreach ($directoryGroup as $directory) {
-                if (($moduleConfig = $this->config->collectData($directory))) {
-                    $this->collectModule($moduleConfig, $namespace, $directory);
+                try {
+                    $this->collectModule(
+                        $this->config->collectData($directory . '/' . self::DIR_CONFIG),
+                        $namespace,
+                        $directory
+                    );
+                } catch (DomainException $e) {
+                    continue;
                 }
             }
         }
@@ -153,7 +166,7 @@ class Manager
         $dir = $this->directory->getDirectoryPath(Directory::MODULES);
         foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
             $directory = $dir . '/' . $moduleDir;
-            if (($moduleConfig = $this->config->collectData($directory))) {
+            if (($moduleConfig = $this->config->collectData($directory . '/' . self::DIR_CONFIG))) {
                 $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
             }
         }

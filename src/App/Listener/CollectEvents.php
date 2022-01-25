@@ -2,9 +2,8 @@
 
 namespace EasyTool\Framework\App\Listener;
 
-use EasyTool\Framework\App\Config;
 use EasyTool\Framework\App\Config\Source\File;
-use EasyTool\Framework\App\Event\Config\Collector as ConfigCollector;
+use EasyTool\Framework\App\Event\Config as EventConfig;
 use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\ListenerInterface;
 use EasyTool\Framework\App\Event\Manager as EventManager;
@@ -12,17 +11,14 @@ use EasyTool\Framework\App\Module\Manager as ModuleManager;
 
 class CollectEvents implements ListenerInterface
 {
-    private Config $config;
-    private ConfigCollector $configCollector;
+    private EventConfig $eventConfig;
     private EventManager $eventManager;
 
     public function __construct(
-        Config $config,
-        ConfigCollector $configCollector,
+        EventConfig $eventConfig,
         EventManager $eventManager
     ) {
-        $this->config = $config;
-        $this->configCollector = $configCollector;
+        $this->eventConfig = $eventConfig;
         $this->eventManager = $eventManager;
     }
 
@@ -32,16 +28,13 @@ class CollectEvents implements ListenerInterface
     public function process(Event $event): void
     {
         foreach ($event->get('modules') as $moduleConfig) {
-            $this->configCollector->addSource(
-                File::createInstance()->setDirectory($moduleConfig[ModuleManager::MODULE_DIR])
+            $eventsConfig = $this->eventConfig->collectData(
+                $moduleConfig[ModuleManager::MODULE_DIR] . '/' . ModuleManager::DIR_CONFIG
             );
-        }
-        $this->configCollector->collect();
-
-        $eventsConfig = $this->config->get('', $this->configCollector->getNamespace());
-        foreach ($eventsConfig as $eventName => $listeners) {
-            foreach ($listeners as $listener) {
-                $this->eventManager->addListener($eventName, $listener);
+            foreach ($eventsConfig as $eventName => $listeners) {
+                foreach ($listeners as $listener) {
+                    $this->eventManager->addListener($eventName, $listener);
+                }
             }
         }
     }

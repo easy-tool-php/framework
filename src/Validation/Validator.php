@@ -2,10 +2,10 @@
 
 namespace EasyTool\Framework\Validation;
 
-use EasyTool\Framework\App\Exception\ClassException;
 use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\Code\VariableTransformer;
 use EasyTool\Framework\Validation\Exception\RuleNotFound;
+use Exception;
 
 class Validator
 {
@@ -109,7 +109,7 @@ class Validator
         }
         try {
             $validator = $this->diContainer->get($validateClass);
-        } catch (ClassException $e) {
+        } catch (Exception $e) {
             throw new RuleNotFound(sprintf('Specified validator `%s` is not found.', $validateName));
         }
         return [$validator, $parameters];
@@ -118,14 +118,12 @@ class Validator
     /**
      * Validate
      */
-    public function validate($rules = [], $data = []): bool
+    public function validate(array $rules = [], array $data = []): bool
     {
-        if (!empty($rules)) {
+        if (!empty($rules) || !empty($data)) {
             $this->rules = [];
-            $this->addRules($rules);
-        }
-        if (!empty($data)) {
             $this->data = $data;
+            $this->addRules($rules);
         }
         foreach ($this->rules as $field => $rules) {
             foreach ($rules as $rule) {
