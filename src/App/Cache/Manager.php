@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App\Cache;
 
+use DomainException;
 use EasyTool\Framework\App\Cache\Adapter\FactoryInterface;
 use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\App\Env\Config as EnvConfig;
@@ -17,13 +18,16 @@ class Manager
     private ?CacheItemPoolInterface $cachePool = null;
     private DiContainer $diContainer;
     private EnvConfig $envConfig;
+    private array $cacheItems;
     private array $storageFactories;
 
     public function __construct(
         DiContainer $diContainer,
         EnvConfig $envConfig,
+        array $cacheItems = [],
         array $storageFactories = []
     ) {
+        $this->cacheItems = $cacheItems;
         $this->diContainer = $diContainer;
         $this->envConfig = $envConfig;
         $this->storageFactories = $storageFactories;
@@ -36,7 +40,7 @@ class Manager
     {
         $configData = $this->envConfig->get(self::ENV_PATH);
         if (!isset($this->storageFactories[$configData['adapter']])) {
-            throw new \DomainException('Specified cache storage adapter does not exist.');
+            throw new DomainException('Specified cache storage adapter does not exist.');
         }
         /** @var FactoryInterface $storageFactory */
         $storageFactory = $this->storageFactories[$configData['adapter']];
@@ -53,7 +57,39 @@ class Manager
      */
     public function isEnabled(string $name): bool
     {
-        return true;
+        if (!isset($this->cacheItems[$name])) {
+            throw new DomainException('Specified cache does not exist.');
+        }
+        return $this->cacheItems[$name];
+    }
+
+    /**
+     * Set status of specified cache
+     */
+    public function setStatus(string $name, bool $status): self
+    {
+        if (!isset($this->cacheItems[$name])) {
+            throw new DomainException('Specified cache does not exist.');
+        }
+        $this->cacheItems[$name] = $status;
+        return $this;
+    }
+
+    /**
+     * Register a cache with specified name to add enable/disable handle
+     */
+    public function register(string $name, bool $enabled = true): self
+    {
+        $this->cacheItems[$name] = $enabled;
+        return $this;
+    }
+
+    /**
+     * Get all registered cache
+     */
+    public function getRegisteredCaches(): array
+    {
+        return $this->cacheItems;
     }
 
     /**

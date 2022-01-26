@@ -113,7 +113,10 @@ class App
         }
         foreach ($scanner->getClassNames() as $className) {
             $reflectionClass = new ReflectionClass($className);
-            if ($reflectionClass->isSubclassOf(Command::class)) {
+            if (
+                $reflectionClass->isSubclassOf(Command::class)
+                && $reflectionClass->isInstantiable()
+            ) {
                 $consoleApplication->add($this->diContainer->create($className));
             }
         }

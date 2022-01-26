@@ -12,6 +12,7 @@ use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
 use EasyTool\Framework\App\Filesystem\Directory;
+use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\Filesystem\FileManager;
 use EasyTool\Framework\Validation\Validator;
 
@@ -40,10 +41,11 @@ class Manager
     private FileManager $fileManager;
     private Validator $validator;
 
+    private array $diData = [];
+    private array $eventsData = [];
     private array $moduleStatus = [];
-
     private array $modules = [
-        self::ENABLED  => [],
+        self::ENABLED => [],
         self::DISABLED => []
     ];
 
@@ -140,6 +142,7 @@ class Manager
          * Developer is able to enable/disable a module through editing `app/config/modules.php`.
          *     Modules which do not exist in the config file will be added after initializing.
          */
+        $this->diData = $this->eventsData = [];
         $this->modules = [self::ENABLED => [], self::DISABLED => []];
         $this->moduleStatus = $this->config->getData();
 
@@ -174,6 +177,19 @@ class Manager
         $this->checkDependency();
         usort($this->modules[self::ENABLED], [$this, 'sortModules']);
         $this->config->setData($this->moduleStatus);
+
+        foreach ($this->modules[self::ENABLED] as $moduleConfig) {
+            $this->diData = array_merge(
+                $this->diData,
+                $this->diConfig->collectData($moduleConfig[self::MODULE_DIR] . '/' . self::DIR_CONFIG)
+            );
+            $this->eventsData = array_merge(
+                $this->eventsData,
+                $this->eventConfig->collectData(
+                    $moduleConfig[ModuleManager::MODULE_DIR] . '/' . ModuleManager::DIR_CONFIG
+                )
+            );
+        }
     }
 
     /**
@@ -189,14 +205,29 @@ class Manager
         if ($this->cacheManager->isEnabled(self::CACHE_NAME)) {
             $cache = $this->cacheManager->getCache(self::CACHE_NAME);
             if (($cachedModules = $cache->get())) {
-                $this->modules = $cachedModules;
+                $this->modules = $cachedModules['modules'];
+                $this->diData = $cachedModules['di'];
+                $this->eventsData = $cachedModules['events'];
             } else {
                 $this->initModules($classLoader);
-                $cache->set($this->modules);
+                $cache->set(
+                    [
+                        'modules' => $this->modules,
+                        'di'      => $this->diData,
+                        'events'  => $this->eventsData
+                    ]
+                );
                 $this->cacheManager->saveCache(self::CACHE_NAME);
             }
         } else {
             $this->initModules($classLoader);
+        }
+
+        $this->diContainer->appendConfig($this->diData);
+        foreach ($this->eventsData as $eventName => $listeners) {
+            foreach ($listeners as $listener) {
+                $this->eventManager->addListener($eventName, $listener);
+            }
         }
         $this->eventManager->dispatch(
             (new Event('after_modules_init'))->set('modules', $this->modules[self::ENABLED])
