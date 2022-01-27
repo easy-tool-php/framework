@@ -95,7 +95,7 @@ class Upgrade
                 continue;
             }
             $reflectionClass = new ReflectionClass($className);
-            if ($reflectionClass->isSubclassOf(AbstractSetup::class)) {
+            if ($reflectionClass->isSubclassOf(AbstractSetup::class) && $reflectionClass->isInstantiable()) {
                 $setups[] = $className;
             }
         }

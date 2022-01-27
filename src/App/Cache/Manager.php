@@ -58,7 +58,7 @@ class Manager
     public function isEnabled(string $name): bool
     {
         if (!isset($this->cacheItems[$name])) {
-            throw new DomainException('Specified cache does not exist.');
+            throw new DomainException('Specified cache is not registered.');
         }
         return $this->cacheItems[$name];
     }
@@ -69,7 +69,7 @@ class Manager
     public function setStatus(string $name, bool $status): self
     {
         if (!isset($this->cacheItems[$name])) {
-            throw new DomainException('Specified cache does not exist.');
+            throw new DomainException('Specified cache is not registered.');
         }
         $this->cacheItems[$name] = $status;
         return $this;
