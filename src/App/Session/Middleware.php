@@ -16,6 +16,7 @@ class Middleware implements MiddlewareInterface
 {
     public const CONFIG_PATH = 'session';
     public const CONFIG_ADAPTER = 'adapter';
+    public const CONFIG_ADAPTER_OPTS = 'adapter_options';
     public const CONFIG_OPTIONS = 'options';
 
     private Area $area;
@@ -42,12 +43,17 @@ class Middleware implements MiddlewareInterface
     {
         if (in_array($this->area->getCode(), [Area::BACKEND, Area::FRONTEND])) {
             /** @var SessionConfig $sessionConfig */
+            /** @var SessionManager $sessionManager */
             $configData = $this->envConfig->get(self::CONFIG_PATH);
             $sessionConfig = $this->diContainer->create(SessionConfig::class);
             $sessionManager = $this->diContainer->create(SessionManager::class, [
-                'config'      => $sessionConfig->setOptions($configData[self::CONFIG_OPTIONS]),
-                'saveHandler' => $this->diContainer->get($this->adapters[$configData[self::CONFIG_ADAPTER]])
+                'config' => $sessionConfig->setOptions($configData[self::CONFIG_OPTIONS] ?? []),
+                'saveHandler' => $this->diContainer->create(
+                    $this->adapters[$configData[self::CONFIG_ADAPTER]],
+                    ['options' => $configData[self::CONFIG_ADAPTER_OPTS] ?? []]
+                )
             ]);
+            $sessionManager->start();
             $this->diContainer->setInstance(SessionManager::class, $sessionManager);
         }
         return $handler->handle($request);

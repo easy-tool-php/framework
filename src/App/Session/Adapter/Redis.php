@@ -2,37 +2,66 @@
 
 namespace EasyTool\Framework\App\Session\Adapter;
 
+use EasyTool\Framework\App\Di\Container as DiContainer;
+use Laminas\Cache\Storage\Adapter\Redis as Storage;
 use Laminas\Session\SaveHandler\SaveHandlerInterface;
 
 class Redis implements SaveHandlerInterface
 {
-    public function close()
+    private Storage $storage;
+
+    public function __construct(DiContainer $diContainer, array $options)
     {
-        // TODO: Implement close() method.
+        $this->storage = $diContainer->create(Storage::class, ['options' => $options]);
     }
 
-    public function destroy($id)
+    /**
+     * @inheritDoc
+     */
+    public function open($path, $name): bool
     {
-        // TODO: Implement destroy() method.
+        return true;
     }
 
-    public function gc($max_lifetime)
+    /**
+     * @inheritDoc
+     */
+    public function close(): bool
     {
-        // TODO: Implement gc() method.
+        return true;
     }
 
-    public function open($path, $name)
+    /**
+     * @inheritDoc
+     */
+    public function gc($maxLifetime): int
     {
-        // TODO: Implement open() method.
+        return 0;
     }
 
-    public function read($id)
+    /**
+     * @inheritDoc
+     */
+    public function read($id): string
     {
-        // TODO: Implement read() method.
+        return $this->storage->getItem($id) ?? '';
     }
 
-    public function write($id, $data)
+    /**
+     * @inheritDoc
+     */
+    public function write($id, $data): bool
     {
-        // TODO: Implement write() method.
+        $this->storage->setItem($id, $data);
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function destroy($id): bool
+    {
+        $this->storage->removeItem($id);
+        return true;
     }
 }

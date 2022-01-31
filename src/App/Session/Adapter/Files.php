@@ -14,34 +14,68 @@ class Files implements SaveHandlerInterface
         $this->dir = $directory->getDirectoryPath(Directory::VAR) . '/session';
     }
 
-    public function close()
+    /**
+     * Get filename with specified ID
+     */
+    private function getFilename($id): string
     {
-        // TODO: Implement close() method.
+        return $this->dir . '/' . $id;
     }
 
-    public function destroy($id)
+    /**
+     * @inheritDoc
+     */
+    public function open($path, $name): bool
     {
-        // TODO: Implement destroy() method.
+        return true;
     }
 
-    public function gc($max_lifetime)
+    /**
+     * @inheritDoc
+     */
+    public function close(): bool
     {
-        // TODO: Implement gc() method.
+        return true;
     }
 
-    public function open($path, $name)
+    /**
+     * @inheritDoc
+     */
+    public function gc($maxLifetime): int
     {
-        // TODO: Implement open() method.
+        return 0;
     }
 
-    public function read($id)
+    /**
+     * @inheritDoc
+     */
+    public function read($id): string
     {
-        if (is_file($this->dir . '/' . $id)) {
+        $filename = $this->getFilename($id);
+        if (is_file($filename)) {
+            return file_get_contents($filename);
         }
+        return '';
     }
 
-    public function write($id, $data)
+    /**
+     * @inheritDoc
+     */
+    public function write($id, $data): bool
     {
-        // TODO: Implement write() method.
+        if (!is_dir($this->dir)) {
+            mkdir($this->dir, 0755, true);
+        }
+        file_put_contents($this->getFilename($id), $data);
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function destroy($id): bool
+    {
+        unlink($this->getFilename($id));
+        return true;
     }
 }
