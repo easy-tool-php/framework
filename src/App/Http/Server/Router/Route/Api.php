@@ -25,7 +25,7 @@ class Api extends AbstractRoute
     public function match(ServerRequestInterface $request): bool
     {
         [$prefix, $path] = array_pad(explode('/', trim($request->getUri()->getPath(), '/'), 2), 2, null);
-        if ($prefix != $this->config->get(self::CONFIG_PATH, Config::ENV)) {
+        if ($prefix != $this->envConfig->get(self::CONFIG_PATH)) {
             return false;
         }
 

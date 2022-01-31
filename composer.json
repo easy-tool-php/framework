@@ -25,6 +25,7 @@
         "laminas/laminas-db": "*",
         "laminas/laminas-di": "*",
         "laminas/laminas-serializer": "*",
+        "laminas/laminas-session": "*",
         "symfony/console": "*",
         "psr/log": "*",
         "psr/http-message": "*",

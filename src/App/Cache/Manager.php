@@ -43,7 +43,7 @@ class Manager
             throw new DomainException('Specified cache storage adapter does not exist.');
         }
         /** @var FactoryInterface $storageFactory */
-        $storageFactory = $this->storageFactories[$configData['adapter']];
+        $storageFactory = $this->diContainer->get($this->storageFactories[$configData['adapter']]);
         $storage = $storageFactory->create($configData['options'] ?? []);
         $this->cachePool = $this->diContainer->create(
             CacheItemPoolDecorator::class,

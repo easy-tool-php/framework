@@ -2,7 +2,7 @@
 
 namespace EasyTool\Framework\App\Http\Server\Router\Route;
 
-use EasyTool\Framework\App\Config;
+use EasyTool\Framework\App\Env\Config as EnvConfig;
 use EasyTool\Framework\App\Module\Controller\ControllerInterface;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
 use EasyTool\Framework\App\Di\Container as DiContainer;
@@ -11,18 +11,18 @@ use Psr\Http\Message\ServerRequestInterface;
 
 abstract class AbstractRoute
 {
-    protected Config $config;
+    protected EnvConfig $envConfig;
     protected ModuleManager $moduleManager;
     protected DiContainer $diContainer;
     protected VariableTransformer $variableTransformer;
 
     public function __construct(
-        Config $config,
+        EnvConfig $envConfig,
         ModuleManager $moduleManager,
         DiContainer $diContainer,
         VariableTransformer $variableTransformer
     ) {
-        $this->config = $config;
+        $this->envConfig = $envConfig;
         $this->moduleManager = $moduleManager;
         $this->diContainer = $diContainer;
         $this->variableTransformer = $variableTransformer;
