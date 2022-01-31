@@ -217,7 +217,7 @@ class Manager
                         'events'  => $this->eventsData
                     ]
                 );
-                $this->cacheManager->saveCache(self::CACHE_NAME);
+                $this->cacheManager->saveCache($cache);
             }
         } else {
             $this->initModules($classLoader);

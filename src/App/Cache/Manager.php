@@ -49,7 +49,6 @@ class Manager
             CacheItemPoolDecorator::class,
             ['storage' => $storage->addPlugin(new Serializer())]
         );
-        $this->diContainer->setInstance(CacheItemPoolInterface::class, $this->cachePool);
     }
 
     /**
@@ -103,9 +102,9 @@ class Manager
     /**
      * Save cache data with specified name
      */
-    public function saveCache(string $name): self
+    public function saveCache(CacheItemInterface $cacheItem): self
     {
-        $this->cachePool->save($this->cachePool->getItem($name));
+        $this->cachePool->save($cacheItem);
         return $this;
     }
 }
