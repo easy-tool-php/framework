@@ -13,8 +13,10 @@ use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
 use EasyTool\Framework\App\Filesystem\Directory;
 use EasyTool\Framework\App\Module\Manager as ModuleManager;
+use EasyTool\Framework\Code\Generator\ArrayGenerator;
 use EasyTool\Framework\Filesystem\FileManager;
 use EasyTool\Framework\Validation\Validator;
+use Laminas\Code\Generator\FileGenerator;
 
 class Manager
 {
@@ -133,6 +135,27 @@ class Manager
     }
 
     /**
+     * Get status filepath
+     */
+    private function getStatusFile(): string
+    {
+        return $this->directory->getDirectoryPath(Directory::CONFIG) . '/modules.php';
+    }
+
+    /**
+     * Update modules status in `app/config/modules.php`
+     */
+    private function updateModuleStatus(): void
+    {
+        FileGenerator::fromArray(
+            [
+                'filename' => $this->getStatusFile(),
+                'body'     => sprintf("return %s;\n", ArrayGenerator::fromArray($this->moduleStatus)->generate())
+            ]
+        )->write();
+    }
+
+    /**
      * Try to collect modules and process related configuration
      * This method will be executed only on the cache is invalid.
      */
@@ -144,7 +167,7 @@ class Manager
          */
         $this->diData = $this->eventsData = [];
         $this->modules = [self::ENABLED => [], self::DISABLED => []];
-        $this->moduleStatus = $this->config->getData();
+        $this->moduleStatus = require $this->getStatusFile();
 
         /**
          * Collect modules built by 3rd party from `vendor` folder
@@ -176,7 +199,7 @@ class Manager
 
         $this->checkDependency();
         usort($this->modules[self::ENABLED], [$this, 'sortModules']);
-        $this->config->setData($this->moduleStatus);
+        $this->updateModuleStatus();
 
         foreach ($this->modules[self::ENABLED] as $moduleConfig) {
             $this->diData = array_merge(

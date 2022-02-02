@@ -40,7 +40,7 @@ class Manager
     /**
      * Absolute filepath of cache status
      */
-    private function getStatusFile()
+    private function getStatusFile(): string
     {
         return $this->directory->getDirectoryPath(Directory::CONFIG) . '/cache.php';
     }

@@ -53,7 +53,7 @@ class Status extends AbstractCommand
             $msg[] = sprintf(
                 '| %s%s |',
                 str_pad($cacheName, $length, ' ', STR_PAD_RIGHT),
-                $status ? ' <info>enabled</info>' : '<error>disabled</error>'
+                $status ? ' <fg=green>enabled</>' : '<fg=red>disabled</>'
             );
         }
         $msg[] = str_repeat('-', $length + 12);
