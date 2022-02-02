@@ -107,7 +107,7 @@ class Manager
     public function register(string $name, bool $enabled = true): self
     {
         if (isset($this->cacheItems[$name])) {
-            throw new DomainException('Specified cache already registered.');
+            return $this;
         }
         $this->cacheItems[$name] = $enabled;
         return $this->saveStatus();
