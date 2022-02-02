@@ -9,7 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 class Api extends AbstractRoute
 {
     public const CONFIG_NAME = 'api';
-    public const CONFIG_PATH = 'api/route';
+    public const ENV_PATH = 'api/route';
 
     /**
      * Check whether a given string matches variable part format
@@ -25,7 +25,7 @@ class Api extends AbstractRoute
     public function match(ServerRequestInterface $request): bool
     {
         [$prefix, $path] = array_pad(explode('/', trim($request->getUri()->getPath(), '/'), 2), 2, null);
-        if ($prefix != $this->envConfig->get(self::CONFIG_PATH)) {
+        if ($prefix != $this->envConfig->get(self::ENV_PATH)) {
             return false;
         }
 

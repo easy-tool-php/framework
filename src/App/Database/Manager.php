@@ -10,7 +10,7 @@ use Laminas\Db\Adapter\Adapter;
 
 class Manager
 {
-    public const CONFIG_PATH = 'database';
+    public const ENV_PATH = 'database';
     public const DEFAULT_CONN = 'default';
     public const DRIVER_PDO_MYSQL = 'Pdo_Mysql';
 
@@ -55,7 +55,7 @@ class Manager
     public function getAdapter(string $name = self::DEFAULT_CONN): Adapter
     {
         if (!isset($this->adapters[$name])) {
-            $configData = $this->envConfig->get(self::CONFIG_PATH);
+            $configData = $this->envConfig->get(self::ENV_PATH);
             if (!isset($configData[$name])) {
                 throw new DomainException(sprintf('Specified database adapter `%s` is not configured.', $name));
             }

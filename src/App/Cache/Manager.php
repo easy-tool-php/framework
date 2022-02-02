@@ -6,8 +6,11 @@ use DomainException;
 use EasyTool\Framework\App\Cache\Adapter\FactoryInterface;
 use EasyTool\Framework\App\Di\Container as DiContainer;
 use EasyTool\Framework\App\Env\Config as EnvConfig;
+use EasyTool\Framework\App\Filesystem\Directory;
+use EasyTool\Framework\Code\Generator\ArrayGenerator;
 use Laminas\Cache\Psr\CacheItemPool\CacheItemPoolDecorator;
 use Laminas\Cache\Storage\Plugin\Serializer;
+use Laminas\Code\Generator\FileGenerator;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
@@ -17,20 +20,29 @@ class Manager
 
     private ?CacheItemPoolInterface $cachePool = null;
     private DiContainer $diContainer;
+    private Directory $directory;
     private EnvConfig $envConfig;
-    private array $cacheItems;
+    private array $cacheItems = [];
     private array $storageFactories;
 
     public function __construct(
         DiContainer $diContainer,
+        Directory $directory,
         EnvConfig $envConfig,
-        array $cacheItems = [],
         array $storageFactories = []
     ) {
-        $this->cacheItems = $cacheItems;
         $this->diContainer = $diContainer;
+        $this->directory = $directory;
         $this->envConfig = $envConfig;
         $this->storageFactories = $storageFactories;
+    }
+
+    /**
+     * Absolute filepath of cache status
+     */
+    private function getStatusFile()
+    {
+        return $this->directory->getDirectoryPath(Directory::CONFIG) . '/cache.php';
     }
 
     /**
@@ -49,6 +61,7 @@ class Manager
             CacheItemPoolDecorator::class,
             ['storage' => $storage->addPlugin(new Serializer())]
         );
+        $this->cacheItems = require $this->getStatusFile();
     }
 
     /**
@@ -71,6 +84,12 @@ class Manager
             throw new DomainException('Specified cache is not registered.');
         }
         $this->cacheItems[$name] = $status;
+        FileGenerator::fromArray(
+            [
+                'filename' => $this->getStatusFile(),
+                'body'     => sprintf("return %s;\n", ArrayGenerator::fromArray($this->cacheItems)->generate())
+            ]
+        )->write();
         return $this;
     }
 

@@ -11,7 +11,7 @@ class ArrayGenerator extends AbstractGenerator
     /**
      * Create a new array generator with an array
      */
-    public static function fromArray(array $array): ArrayGenerator
+    public static function fromArray(array $array): self
     {
         return (new static())->setArray($array);
     }
@@ -19,7 +19,7 @@ class ArrayGenerator extends AbstractGenerator
     /**
      * Set the source array
      */
-    public function setArray(array $array): ArrayGenerator
+    public function setArray(array $array): self
     {
         $this->array = $array;
         return $this;
