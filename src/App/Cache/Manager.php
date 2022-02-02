@@ -46,6 +46,20 @@ class Manager
     }
 
     /**
+     * Save status
+     */
+    private function saveStatus(): self
+    {
+        FileGenerator::fromArray(
+            [
+                'filename' => $this->getStatusFile(),
+                'body'     => sprintf("return %s;\n", ArrayGenerator::fromArray($this->cacheItems)->generate())
+            ]
+        )->write();
+        return $this;
+    }
+
+    /**
      * Implements cache pool based on environment config
      */
     public function initialize(): void
@@ -84,13 +98,7 @@ class Manager
             throw new DomainException('Specified cache is not registered.');
         }
         $this->cacheItems[$name] = $status;
-        FileGenerator::fromArray(
-            [
-                'filename' => $this->getStatusFile(),
-                'body'     => sprintf("return %s;\n", ArrayGenerator::fromArray($this->cacheItems)->generate())
-            ]
-        )->write();
-        return $this;
+        return $this->saveStatus();
     }
 
     /**
@@ -98,8 +106,11 @@ class Manager
      */
     public function register(string $name, bool $enabled = true): self
     {
+        if (isset($this->cacheItems[$name])) {
+            throw new DomainException('Specified cache already registered.');
+        }
         $this->cacheItems[$name] = $enabled;
-        return $this;
+        return $this->saveStatus();
     }
 
     /**
