@@ -11,6 +11,9 @@ use Laminas\Cache\Storage\Capabilities;
 use Laminas\Cache\Storage\FlushableInterface;
 use stdClass;
 
+/**
+ * This is a non-standard but quick implement for PSR-6
+ */
 class Filesystem extends AbstractAdapter implements FlushableInterface
 {
     protected LocalFilesystemInteraction $filesystem;
