@@ -1,13 +1,11 @@
 <?php
 
-namespace EasyTool\Framework\App\Command;
+namespace EasyTool\Framework\App\Command\Setup;
 
+use EasyTool\Framework\App\Command\AbstractCommand;
 use EasyTool\Framework\App\Setup\Upgrade as Processor;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 
-class Upgrade extends Command
+class Upgrade extends AbstractCommand
 {
     private Processor $processor;
 
@@ -31,22 +29,21 @@ class Upgrade extends Command
     /**
      * @inheritDoc
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function doExecution(): void
     {
-        $output->writeln('<info>Preparing for upgrade.</info>');
+        $this->output->writeln('<info>Preparing for upgrade.</info>');
         $this->processor->prepareForUpgrade();
         $setups = $this->processor->collectSetups();
 
         if (count($setups) > 0) {
-            $output->writeln('<info>Starting upgrade:</info>');
+            $this->output->writeln('<info>Starting upgrade:</info>');
             foreach ($setups as $setup) {
-                $output->write(sprintf('Processing `%s`...', $setup));
+                $this->output->write(sprintf('Processing `%s`...', $setup));
                 $this->processor->process($setup);
-                $output->writeln(' Done');
+                $this->output->writeln(' Done');
             }
         }
 
-        $output->writeln('<info>All setups were processed.</info>');
-        return 0;
+        $this->output->writeln('<info>All setups were processed.</info>');
     }
 }
