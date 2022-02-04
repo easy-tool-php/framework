@@ -1,13 +1,14 @@
 <?php
 
-namespace EasyTool\Framework\App\Cache\Adapter;
+namespace EasyTool\Framework\App\Cache\Adapter\Redis;
 
 use DomainException;
+use EasyTool\Framework\App\Cache\Adapter\FactoryInterface;
 use EasyTool\Framework\Validation\Validator;
 use Laminas\Cache\Storage\Adapter\AbstractAdapter;
 use Laminas\Cache\Storage\Adapter\Redis;
 
-class RedisFactory implements FactoryInterface
+class Factory implements FactoryInterface
 {
     private Validator $validator;
 

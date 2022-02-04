@@ -1,0 +1,133 @@
+<?php
+
+namespace EasyTool\Framework\App\Cache\Adapter;
+
+use EasyTool\Framework\App\Cache\Adapter\Filesystem\Options;
+use Exception;
+use Laminas\Cache\Storage\Adapter\AbstractAdapter;
+use Laminas\Cache\Storage\Adapter\Filesystem\Exception\MetadataException;
+use Laminas\Cache\Storage\Adapter\Filesystem\LocalFilesystemInteraction;
+use Laminas\Cache\Storage\Capabilities;
+use Laminas\Cache\Storage\FlushableInterface;
+use stdClass;
+
+class Filesystem extends AbstractAdapter implements FlushableInterface
+{
+    protected LocalFilesystemInteraction $filesystem;
+
+    public function __construct(
+        LocalFilesystemInteraction $filesystem,
+        $options = null
+    ) {
+        $this->filesystem = $filesystem;
+        parent::__construct($options);
+    }
+
+    /**
+     * Returns absolute filepath with specified key
+     */
+    protected function getFilename(string $normalizedKey): string
+    {
+        return $this->options->getCacheDir() . '/' . base64_encode($normalizedKey);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function internalHasItem(&$normalizedKey): bool
+    {
+        $filepath = $this->getFilename($normalizedKey);
+        if (!$this->filesystem->exists($filepath)) {
+            return false;
+        }
+        if (
+            ($ttl = $this->getOptions()->getTtl())
+            && (time() >= $this->filesystem->lastModifiedTime($filepath) + $ttl)
+        ) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function internalGetItem(&$normalizedKey, &$success = null, &$casToken = null)
+    {
+        if (!$this->internalHasItem($normalizedKey)) {
+            return null;
+        }
+        try {
+            $filepath = $this->getFilename($normalizedKey);
+            $data = $this->filesystem->read($filepath);
+            if ($casToken) {
+                try {
+                    $casToken = $this->filesystem->lastModifiedTime($filepath) . $this->filesystem->filesize($filepath);
+                } catch (MetadataException $exception) {
+                    $casToken = '';
+                }
+            }
+            $success = true;
+            return $data;
+        } catch (Exception $e) {
+            $success = false;
+            throw $e;
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function internalSetItem(&$normalizedKey, &$value): bool
+    {
+        return $this->filesystem->write($this->getFilename($normalizedKey), $value);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function internalRemoveItem(&$normalizedKey): bool
+    {
+        $filepath = $this->getFilename($normalizedKey);
+        return $this->filesystem->exists($filepath) ? $this->filesystem->delete($filepath) : false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function internalGetCapabilities()
+    {
+        if ($this->capabilities === null) {
+            $this->capabilityMarker = new stdClass();
+            $this->capabilities = new Capabilities(
+                $this,
+                $this->capabilityMarker,
+                [
+                    'maxTtl' => 0,
+                    'minTtl' => 1,
+                    'staticTtl' => true
+                ]
+            );
+        }
+        return $this->capabilities;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function flush()
+    {
+        return false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function setOptions($options)
+    {
+        if (!$options instanceof Options) {
+            $options = new Options($options);
+        }
+        return parent::setOptions($options);
+    }
+}
