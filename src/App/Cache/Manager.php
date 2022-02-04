@@ -142,4 +142,13 @@ class Manager
         $this->cachePool->save($cacheItem);
         return $this;
     }
+
+    /**
+     * Flush specified cache item
+     */
+    public function flushCache(string $name): self
+    {
+        $this->cachePool->deleteItem($name);
+        return $this;
+    }
 }

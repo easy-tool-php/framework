@@ -167,7 +167,7 @@ class Manager
          */
         $this->diData = $this->eventsData = [];
         $this->modules = [self::ENABLED => [], self::DISABLED => []];
-        $this->moduleStatus = require $this->getStatusFile();
+        $this->moduleStatus = is_file(($statusFile = $this->getStatusFile())) ? require $this->getStatusFile() : [];
 
         /**
          * Collect modules built by 3rd party from `vendor` folder

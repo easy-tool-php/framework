@@ -2,6 +2,7 @@
 
 namespace EasyTool\Framework\App\Setup;
 
+use EasyTool\Framework\App;
 use EasyTool\Framework\App\Cache\Manager as CacheManager;
 use EasyTool\Framework\App\Database\Connection;
 use EasyTool\Framework\App\Database\Manager as DbManager;
@@ -17,6 +18,7 @@ class Upgrade
 {
     public const DB_TABLE = 'executed_setups';
 
+    private App $app;
     private CacheManager $cacheManager;
     private DbManager $dbManager;
     private DbSetup $dbSetup;
@@ -25,6 +27,7 @@ class Upgrade
     private DiContainer $diContainer;
 
     public function __construct(
+        App $app,
         CacheManager $cacheManager,
         DbManager $dbManager,
         DbSetup $dbSetup,
@@ -32,6 +35,7 @@ class Upgrade
         ModuleManager $moduleManager,
         DiContainer $diContainer
     ) {
+        $this->app = $app;
         $this->cacheManager = $cacheManager;
         $this->dbManager = $dbManager;
         $this->dbSetup = $dbSetup;
@@ -71,7 +75,7 @@ class Upgrade
 
     public function prepareForUpgrade()
     {
-        $this->cacheManager->getCache(ModuleManager::CACHE_NAME)->clear();
+        $this->cacheManager->flushCache(ModuleManager::CACHE_NAME);
         $this->moduleManager->initialize($this->app->getClassLoader());
     }
 
