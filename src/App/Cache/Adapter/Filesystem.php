@@ -32,6 +32,37 @@ class Filesystem extends AbstractAdapter implements FlushableInterface
     }
 
     /**
+     * Get file contents with specified absolute path
+     */
+    protected function getFileContents($filepath, $lock = false, $block = false, &$wouldBlock = null)
+    {
+        return $this->filesystem->read($filepath, $lock, $block, $wouldBlock);
+    }
+
+    /**
+     * Put file contents with specified absolute path
+     */
+    protected function putFileContents(
+        $filepath,
+        $contents,
+        $umask = null,
+        $permissions = null,
+        $lock = false,
+        $block = false,
+        &$wouldBlock = null
+    ): bool {
+        return $this->filesystem->write(
+            $filepath,
+            $contents,
+            $umask,
+            $permissions,
+            $lock,
+            $block,
+            $wouldBlock
+        );
+    }
+
+    /**
      * @inheritDoc
      */
     protected function internalHasItem(&$normalizedKey): bool
@@ -59,7 +90,7 @@ class Filesystem extends AbstractAdapter implements FlushableInterface
         }
         try {
             $filepath = $this->getFilename($normalizedKey);
-            $data = $this->filesystem->read($filepath);
+            $data = $this->getFileContents($filepath);
             if ($casToken) {
                 try {
                     $casToken = $this->filesystem->lastModifiedTime($filepath) . $this->filesystem->filesize($filepath);
@@ -80,7 +111,7 @@ class Filesystem extends AbstractAdapter implements FlushableInterface
      */
     protected function internalSetItem(&$normalizedKey, &$value): bool
     {
-        return $this->filesystem->write($this->getFilename($normalizedKey), $value);
+        return $this->putFileContents($this->getFilename($normalizedKey), $value);
     }
 
     /**
