@@ -155,7 +155,7 @@ class Filesystem extends AbstractAdapter implements FlushableInterface
         if (is_dir(($dir = $this->options->getCacheDir()))) {
             $iterator = new GlobIterator($dir . '/*', GlobIterator::SKIP_DOTS | GlobIterator::CURRENT_AS_PATHNAME);
             while ($iterator->valid()) {
-                unlink($iterator->current());
+                $this->filesystem->delete($iterator->current());
                 $iterator->next();
             }
         }
