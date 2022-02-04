@@ -77,7 +77,10 @@ class Manager
             CacheItemPoolDecorator::class,
             ['storage' => $storage->addPlugin(new Serializer())]
         );
-        $this->cacheItems = require $this->getStatusFile();
+        if (!is_file(($statusFile = $this->getStatusFile()))) {
+            $this->saveStatus();
+        }
+        $this->cacheItems = require $statusFile;
     }
 
     /**
