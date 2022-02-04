@@ -23,6 +23,61 @@ class Curl implements ClientInterface
     }
 
     /**
+     * Make a request
+     */
+    protected function request(string $method, string $uri, $data, array $headers = []): ResponseInterface
+    {
+        $request = $this->requestFactory->createRequest($method, $uri);
+        foreach ($headers as $name => $value) {
+            $request->withHeader($name, $value);
+        }
+        if (
+            $method == Request::METHOD_POST
+            && in_array($request->getHeaderLine('content_type'), [
+                'application/x-www-form-urlencoded',
+                'multipart/form-data',
+                ''
+            ])
+        ) {
+            $data = http_build_query($data);
+        }
+        $request->getBody()->write($data);
+        return $this->sendRequest($request);
+    }
+
+    /**
+     * Make a GET request
+     */
+    public function get(string $uri, $data = '', array $headers = []): ResponseInterface
+    {
+        return $this->request(Request::METHOD_GET, $uri, $data, $headers);
+    }
+
+    /**
+     * Make a POST request
+     */
+    public function post(string $uri, $data = '', array $headers = []): ResponseInterface
+    {
+        return $this->request(Request::METHOD_POST, $uri, $data, $headers);
+    }
+
+    /**
+     * Make a PUT request
+     */
+    public function put(string $uri, $data = '', array $headers = []): ResponseInterface
+    {
+        return $this->request(Request::METHOD_PUT, $uri, $data, $headers);
+    }
+
+    /**
+     * Make a DELETE request
+     */
+    public function delete(string $uri, $data = '', array $headers = []): ResponseInterface
+    {
+        return $this->request(Request::METHOD_DELETE, $uri, $data, $headers);
+    }
+
+    /**
      * @inheritDoc
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
@@ -81,6 +136,7 @@ class Curl implements ClientInterface
         }
 
         $response = $this->responseFactory->createResponse();
-        return $response->withBody($response->getBody()->write($remoteResponse));
+        $response->getBody()->write($remoteResponse);
+        return $response;
     }
 }

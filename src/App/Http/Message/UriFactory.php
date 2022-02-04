@@ -20,6 +20,6 @@ class UriFactory implements UriFactoryInterface
      */
     public function createUri(string $uri = ''): UriInterface
     {
-        return $this->diContainer->create(UriInterface::class, ['uri' => $uri]);
+        return $this->diContainer->create(UriInterface::class)->fromString($uri);
     }
 }
