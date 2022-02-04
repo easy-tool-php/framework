@@ -22,15 +22,17 @@ class Manager
     private DiContainer $diContainer;
     private Directory $directory;
     private EnvConfig $envConfig;
-    private array $cacheItems = [];
+    private array $cacheItems;
     private array $storageFactories;
 
     public function __construct(
         DiContainer $diContainer,
         Directory $directory,
         EnvConfig $envConfig,
+        array $cacheItems = [],
         array $storageFactories = []
     ) {
+        $this->cacheItems = $cacheItems;
         $this->diContainer = $diContainer;
         $this->directory = $directory;
         $this->envConfig = $envConfig;
