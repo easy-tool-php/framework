@@ -4,6 +4,7 @@ namespace EasyTool\Framework\App\Cache\Adapter;
 
 use EasyTool\Framework\App\Cache\Adapter\Filesystem\Options;
 use Exception;
+use GlobIterator;
 use Laminas\Cache\Storage\Adapter\AbstractAdapter;
 use Laminas\Cache\Storage\Adapter\Filesystem\Exception\MetadataException;
 use Laminas\Cache\Storage\Adapter\Filesystem\LocalFilesystemInteraction;
@@ -151,7 +152,14 @@ class Filesystem extends AbstractAdapter implements FlushableInterface
      */
     public function flush()
     {
-        return false;
+        if (is_dir(($dir = $this->options->getCacheDir()))) {
+            $iterator = new GlobIterator($dir . '/*', GlobIterator::SKIP_DOTS | GlobIterator::CURRENT_AS_PATHNAME);
+            while ($iterator->valid()) {
+                unlink($iterator->current());
+                $iterator->next();
+            }
+        }
+        return true;
     }
 
     /**

@@ -146,9 +146,9 @@ class Manager
     /**
      * Flush specified cache item
      */
-    public function flushCache(string $name): self
+    public function flushCache(?string $name = null): self
     {
-        $this->cachePool->deleteItem($name);
+        ($name === null) ? $this->cachePool->clear() : $this->cachePool->deleteItem($name);
         return $this;
     }
 }
