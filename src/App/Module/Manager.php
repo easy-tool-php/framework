@@ -12,7 +12,7 @@ use EasyTool\Framework\App\Event\Event;
 use EasyTool\Framework\App\Event\Manager as EventManager;
 use EasyTool\Framework\App\Exception\ModuleException;
 use EasyTool\Framework\App\Filesystem\Directory;
-use EasyTool\Framework\App\Module\Manager as ModuleManager;
+use EasyTool\Framework\App\System\Config as SystemConfig;
 use EasyTool\Framework\Code\Generator\ArrayGenerator;
 use EasyTool\Framework\Filesystem\FileManager;
 use EasyTool\Framework\Validation\Validator;
@@ -41,13 +41,15 @@ class Manager
     private EventConfig $eventConfig;
     private EventManager $eventManager;
     private FileManager $fileManager;
+    private SystemConfig $systemConfig;
     private Validator $validator;
 
+    private array $systemConfigData = [];
     private array $diData = [];
     private array $eventsData = [];
     private array $moduleStatus = [];
     private array $modules = [
-        self::ENABLED => [],
+        self::ENABLED  => [],
         self::DISABLED => []
     ];
 
@@ -60,6 +62,7 @@ class Manager
         EventConfig $eventConfig,
         EventManager $eventManager,
         FileManager $fileManager,
+        SystemConfig $systemConfig,
         Validator $validator
     ) {
         $this->cacheManager = $cacheManager;
@@ -70,7 +73,78 @@ class Manager
         $this->eventConfig = $eventConfig;
         $this->eventManager = $eventManager;
         $this->fileManager = $fileManager;
+        $this->systemConfig = $systemConfig;
         $this->validator = $validator;
+    }
+
+    /**
+     * Try to collect modules and process related configuration
+     * This method will be executed only on the cache is invalid.
+     */
+    private function initModules(ClassLoader $classLoader): void
+    {
+        /**
+         * Developer is able to enable/disable a module through editing `app/config/modules.php`.
+         *     Modules which do not exist in the config file will be added after initializing.
+         */
+        $this->diData = $this->eventsData = [];
+        $this->modules = [self::ENABLED => [], self::DISABLED => []];
+        $this->moduleStatus = is_file(($statusFile = $this->getStatusFile())) ? require $this->getStatusFile() : [];
+
+        /**
+         * Collect modules built by 3rd party from `vendor` folder
+         */
+        foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
+            foreach ($directoryGroup as $directory) {
+                try {
+                    $this->collectModule(
+                        $this->config->collectData($directory . '/' . self::DIR_CONFIG),
+                        $namespace,
+                        $directory
+                    );
+                } catch (DomainException $e) {
+                    continue;
+                }
+            }
+        }
+
+        /**
+         * Collect local customized modules from `app/modules` folder
+         */
+        $dir = $this->directory->getDirectoryPath(Directory::MODULES);
+        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
+            $directory = $dir . '/' . $moduleDir;
+            if (($moduleConfig = $this->config->collectData($directory . '/' . self::DIR_CONFIG))) {
+                $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
+            }
+        }
+
+        $this->checkDependency();
+        usort($this->modules[self::ENABLED], [$this, 'sortModules']);
+        $this->updateModuleStatus();
+
+        foreach ($this->modules[self::ENABLED] as $moduleConfig) {
+            $this->diData = array_merge(
+                $this->diData,
+                $this->diConfig->collectData($moduleConfig[self::MODULE_DIR] . '/' . self::DIR_CONFIG)
+            );
+            $this->eventsData = array_merge(
+                $this->eventsData,
+                $this->eventConfig->collectData($moduleConfig[self::MODULE_DIR] . '/' . self::DIR_CONFIG)
+            );
+            $this->systemConfigData = array_merge(
+                $this->systemConfigData,
+                $this->systemConfig->collectData($moduleConfig[self::MODULE_DIR] . '/' . self::DIR_CONFIG)
+            );
+        }
+    }
+
+    /**
+     * Get status filepath
+     */
+    private function getStatusFile(): string
+    {
+        return $this->directory->getDirectoryPath(Directory::CONFIG) . '/modules.php';
     }
 
     /**
@@ -135,14 +209,6 @@ class Manager
     }
 
     /**
-     * Get status filepath
-     */
-    private function getStatusFile(): string
-    {
-        return $this->directory->getDirectoryPath(Directory::CONFIG) . '/modules.php';
-    }
-
-    /**
      * Update modules status in `app/config/modules.php`
      */
     private function updateModuleStatus(): void
@@ -153,66 +219,6 @@ class Manager
                 'body'     => sprintf("return %s;\n", ArrayGenerator::fromArray($this->moduleStatus)->generate())
             ]
         )->write();
-    }
-
-    /**
-     * Try to collect modules and process related configuration
-     * This method will be executed only on the cache is invalid.
-     */
-    private function initModules(ClassLoader $classLoader): void
-    {
-        /**
-         * Developer is able to enable/disable a module through editing `app/config/modules.php`.
-         *     Modules which do not exist in the config file will be added after initializing.
-         */
-        $this->diData = $this->eventsData = [];
-        $this->modules = [self::ENABLED => [], self::DISABLED => []];
-        $this->moduleStatus = is_file(($statusFile = $this->getStatusFile())) ? require $this->getStatusFile() : [];
-
-        /**
-         * Collect modules built by 3rd party from `vendor` folder
-         */
-        foreach ($classLoader->getPrefixesPsr4() as $namespace => $directoryGroup) {
-            foreach ($directoryGroup as $directory) {
-                try {
-                    $this->collectModule(
-                        $this->config->collectData($directory . '/' . self::DIR_CONFIG),
-                        $namespace,
-                        $directory
-                    );
-                } catch (DomainException $e) {
-                    continue;
-                }
-            }
-        }
-
-        /**
-         * Collect local customized modules from `app/modules` folder
-         */
-        $dir = $this->directory->getDirectoryPath(Directory::MODULES);
-        foreach ($this->fileManager->getSubFolders($dir) as $moduleDir) {
-            $directory = $dir . '/' . $moduleDir;
-            if (($moduleConfig = $this->config->collectData($directory . '/' . self::DIR_CONFIG))) {
-                $this->collectModule($moduleConfig, 'App\\' . $moduleDir . '\\', $directory);
-            }
-        }
-
-        $this->checkDependency();
-        usort($this->modules[self::ENABLED], [$this, 'sortModules']);
-        $this->updateModuleStatus();
-
-        foreach ($this->modules[self::ENABLED] as $moduleConfig) {
-            $this->diData = array_merge(
-                $this->diData,
-                $this->diConfig->collectData($moduleConfig[self::MODULE_DIR] . '/' . self::DIR_CONFIG)
-            );
-            $this->eventsData = array_merge(
-                $this->eventsData,
-                $this->eventConfig->collectData(
-                    $moduleConfig[ModuleManager::MODULE_DIR] . '/' . ModuleManager::DIR_CONFIG
-                )
-            );
-        }
     }
 
     /**
@@ -231,13 +237,15 @@ class Manager
                 $this->modules = $cachedModules['modules'];
                 $this->diData = $cachedModules['di'];
                 $this->eventsData = $cachedModules['events'];
+                $this->systemConfigData = $cachedModules['system_config'];
             } else {
                 $this->initModules($classLoader);
                 $cache->set(
                     [
-                        'modules' => $this->modules,
-                        'di'      => $this->diData,
-                        'events'  => $this->eventsData
+                        'modules'       => $this->modules,
+                        'di'            => $this->diData,
+                        'events'        => $this->eventsData,
+                        'system_config' => $this->systemConfigData
                     ]
                 );
                 $this->cacheManager->saveCache($cache);
@@ -255,14 +263,7 @@ class Manager
         $this->eventManager->dispatch(
             (new Event('after_modules_init'))->set('modules', $this->modules[self::ENABLED])
         );
-    }
-
-    /**
-     * Get all enabled modules
-     */
-    public function getEnabledModules(): array
-    {
-        return $this->modules[self::ENABLED];
+        $this->systemConfig->addData($this->systemConfigData);
     }
 
     /**
@@ -271,5 +272,13 @@ class Manager
     public function getAllModules(): array
     {
         return array_merge($this->modules[self::ENABLED], $this->modules[self::DISABLED]);
+    }
+
+    /**
+     * Get all enabled modules
+     */
+    public function getEnabledModules(): array
+    {
+        return $this->modules[self::ENABLED];
     }
 }
